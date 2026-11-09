@@ -1,0 +1,9 @@
+sql-formatter 4.0.2
+https://github.com/sql-formatter-org/sql-formatter
+Copyright (c) 2016-2020 ZeroTurnaround LLC
+Copyright (c) 2020-present George Leslie-Waksman and other contributors
+Licensed under the MIT License; see LICENSE.
+
+The upstream webpack distribution is included without its embedded source map.
+Its comma formatter is modified to implement the leading-comma option used by
+DevToys.Tools. No Node.js installation is required at runtime.
