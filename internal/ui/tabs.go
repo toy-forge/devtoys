@@ -50,12 +50,12 @@ func (t *Tabs) View() string {
 	var parts []string
 	for i, item := range t.Items {
 		if i > 0 {
-			parts = append(parts, lipgloss.NewStyle().Foreground(theme.Border).Render("│"))
+			parts = append(parts, lipgloss.NewStyle().Foreground(theme.Border).Background(theme.Background).Render("│"))
 		}
 		if i == t.Index {
 			parts = append(parts, lipgloss.NewStyle().Foreground(theme.Text).Background(theme.Control).Bold(true).Padding(0, 1).Render(item))
 		} else {
-			parts = append(parts, lipgloss.NewStyle().Foreground(theme.Muted).Padding(0, 1).Render(item))
+			parts = append(parts, lipgloss.NewStyle().Foreground(theme.Muted).Background(theme.Background).Padding(0, 1).Render(item))
 		}
 	}
 	line := strings.Join(parts, "")

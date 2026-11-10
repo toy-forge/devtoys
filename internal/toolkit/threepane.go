@@ -154,11 +154,11 @@ func (p *ThreePane) resize() {
 			h = max(3, height-2)
 			p.rects[p.Focus] = ui.Rect{X: 0, Y: 1, W: width, H: h}
 		} else {
-			// 双栏缝统一 Space2：中缝 2 列，两窗格各占一半。
-			left := (width - ui.Space2) / 2
-			right := width - left - ui.Space2
+			// 双栏缝 Space3（章节缝）：中缝 3 列，两窗格各占一半。
+			left := (width - ui.Space3) / 2
+			right := width - left - ui.Space3
 			p.rects[0] = ui.Rect{X: 0, Y: 0, W: left, H: h}
-			p.rects[1] = ui.Rect{X: left + ui.Space2, Y: 0, W: right, H: h}
+			p.rects[1] = ui.Rect{X: left + ui.Space3, Y: 0, W: right, H: h}
 		}
 		p.setPaneSize(0, p.rects[0])
 		p.setPaneSize(1, p.rects[1])
@@ -172,22 +172,22 @@ func (p *ThreePane) resize() {
 		h := max(3, height-2)
 		p.rects[p.Focus] = ui.Rect{X: 0, Y: 1, W: width, H: h}
 	} else {
-		// 横向缝 Space2、纵向缝 1 空行：双栏中缝 2 列，
+		// 横向缝 Space3、纵向缝 1 空行：双栏中缝 3 列，
 		// 输出窗格与输入窗格之间留 1 行。
 		top := max(3, (height-2)/3)
 		bottom := max(3, height-2-top)
-		left := (width - ui.Space2) / 2
-		right := width - left - ui.Space2
+		left := (width - ui.Space3) / 2
+		right := width - left - ui.Space3
 		if p.outputFirst {
 			p.rects = [3]ui.Rect{
 				{X: 0, Y: top + 1, W: left, H: bottom},
-				{X: left + ui.Space2, Y: top + 1, W: right, H: bottom},
+				{X: left + ui.Space3, Y: top + 1, W: right, H: bottom},
 				{X: 0, Y: 0, W: width, H: top},
 			}
 		} else {
 			p.rects = [3]ui.Rect{
 				{X: 0, Y: 0, W: left, H: top},
-				{X: left + ui.Space2, Y: 0, W: right, H: top},
+				{X: left + ui.Space3, Y: 0, W: right, H: top},
 				{X: 0, Y: top + 1, W: width, H: bottom},
 			}
 		}
@@ -553,9 +553,9 @@ func (p *ThreePane) pane(index int) string {
 }
 
 func (p *ThreePane) View() string {
-	// 双栏缝 Space2：横向拼接用 gap 列、纵向堆叠用 1 空行，
+	// 双栏缝 Space3：横向拼接用 CanvasGutter、纵向堆叠用 1 空行，
 	// 与 resize() 的 rects 布局同源。
-	hGap := strings.Repeat(" ", ui.Space2)
+	hGap := ui.CanvasGutter(ui.Space3)
 	var body string
 	if p.expanded >= 0 {
 		body = p.pane(p.expanded)
@@ -582,18 +582,24 @@ func (p *ThreePane) View() string {
 	return body
 }
 
-// footerView 渲染底部单行状态条。
+// StatusHints 供外壳状态栏合并展示。
+func (p *ThreePane) StatusHints() []ui.StatusHint {
+	hints := []ui.StatusHint{{Key: "scroll", Desc: "output"}}
+	if p.expandKey != "" && (p.extendable[p.Focus] || p.expanded >= 0) {
+		desc := "expand"
+		if p.expanded >= 0 {
+			desc = "restore"
+		}
+		hints = append(hints, ui.StatusHint{Key: strings.ToLower(p.expandKey), Desc: desc})
+	}
+	return hints
+}
+
+// footerView 渲染底部单行状态条：仅右侧按钮，快捷键交给外壳状态栏。
 func (p *ThreePane) footerView() string {
 	p.footer.SetWidth(max(1, p.width))
-	left := "tab focus · scroll to browse"
-	if p.extendable[p.Focus] || p.expanded >= 0 {
-		label := "Expand"
-		if p.expanded >= 0 {
-			label = "Restore"
-		}
-		left += " · " + strings.ToUpper(p.expandKey) + " " + label
-	}
-	p.footer.SetLeft(left)
+	p.footer.SetLeft("")
+	p.footer.SetLeftTokens(nil)
 	p.footer.SetHints()
 	switch {
 	case p.Err != nil:

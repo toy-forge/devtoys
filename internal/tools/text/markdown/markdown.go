@@ -14,6 +14,7 @@ import (
 
 	"github.com/toy-forge/devtoys/internal/theme"
 	"github.com/toy-forge/devtoys/internal/toolkit"
+	"github.com/toy-forge/devtoys/internal/ui"
 )
 
 // Model 是 Markdown 预览工具，包装公共双栏工作区。
@@ -63,6 +64,8 @@ func (m *Model) Title() string		{ return "Markdown Preview" }
 func (m *Model) Category() string	{ return "text" }
 func (m *Model) Icon() string		{ return "󰍔" }
 func (m *Model) Description() string	{ return "Render a Markdown preview" }
+
+func (m *Model) PaneStatusHints() []ui.StatusHint { return m.ws.StatusHints() }
 
 // Init 满足 bubbletea 模型接口；无定时任务需要启动。
 func (m *Model) Init() tea.Cmd	{ return nil }

@@ -14,6 +14,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/toy-forge/devtoys/internal/toolkit"
+	"github.com/toy-forge/devtoys/internal/ui"
 )
 
 // model 持有公共工作区与上一次的输入内容，用于检测输入变化。
@@ -53,6 +54,8 @@ func (m *model) ShortTitle() string	{ return "JSON <> YAML" }
 func (m *model) Category() string	{ return "converters" }
 func (m *model) Icon() string		{ return "⇄" }
 func (m *model) Description() string	{ return "Convert between JSON and YAML" }
+
+func (m *model) PaneStatusHints() []ui.StatusHint { return m.ws.StatusHints() }
 
 func (m *model) Init() tea.Cmd	{ return nil }
 

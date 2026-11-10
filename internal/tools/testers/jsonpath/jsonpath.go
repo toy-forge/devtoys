@@ -122,6 +122,8 @@ func (m *model) ShortTitle() string	{ return "JSONPath" }
 func (m *model) Category() string	{ return "testers" }
 func (m *model) Icon() string		{ return m.icon }
 func (m *model) Description() string	{ return m.desc }
+
+func (m *model) PaneStatusHints() []ui.StatusHint { return m.ws.StatusHints() }
 func (*model) AcceptsFiles() bool	{ return true }
 
 func (m *model) Init() tea.Cmd	{ return nil }

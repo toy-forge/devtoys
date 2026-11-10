@@ -25,6 +25,27 @@ func TestStripANSI(t *testing.T) {
 	}
 }
 
+func TestEmptyOutputShowsPlaceholder(t *testing.T) {
+	w := NewWorkspace("", "")
+	w.Update(tea.WindowSizeMsg{Width: 80, Height: 12})
+	if view := ansi.Strip(w.View()); !strings.Contains(view, "Output appears here.") {
+		t.Fatal("empty output has no placeholder")
+	}
+	w.SetOutput("result")
+	if view := ansi.Strip(w.View()); strings.Contains(view, "Output appears here.") {
+		t.Fatal("placeholder remained after output was set")
+	}
+}
+
+func TestOutputLoadingTextIsNotReplacedByPlaceholder(t *testing.T) {
+	w := NewWorkspace("", "")
+	w.Update(tea.WindowSizeMsg{Width: 80, Height: 12})
+	w.Output.SetContent("Formatting…")
+	if view := ansi.Strip(w.View()); !strings.Contains(view, "Formatting…") || strings.Contains(view, "Output appears here.") {
+		t.Fatalf("loading state replaced by placeholder:\n%s", view)
+	}
+}
+
 func TestWorkspaceMouseFocusAndScroll(t *testing.T) {
 	w := NewWorkspace("", strings.Repeat("line\n", 30))
 	w.Update(tea.WindowSizeMsg{Width: 80, Height: 12})

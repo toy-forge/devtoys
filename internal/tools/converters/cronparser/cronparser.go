@@ -69,6 +69,8 @@ func (*model) ShortTitle() string	{ return "Cron parser" }
 func (*model) Category() string		{ return "converters" }
 func (*model) Icon() string		{ return "󰃰" }
 func (*model) Description() string	{ return "Parse a cron expression and preview upcoming dates" }
+
+func (m *model) PaneStatusHints() []ui.StatusHint { return m.ws.StatusHints() }
 func (*model) Init() tea.Cmd		{ return nil }
 func (m *model) actions() []string {
 	seconds := "Off"

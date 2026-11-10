@@ -81,6 +81,23 @@ func (t *Toolbar) gap() int {
 	return t.Gap
 }
 
+// gapFill 渲染按钮间隔：缝隙列铺 Surface，与 StatusBar.SetRight
+// 对 Toolbar 统一 withBackground 的语义一致，避免非默认底色终端
+// 在 panel 标题行等场景露出透明缝。
+func (t *Toolbar) gapFill() string {
+	if n := t.gap(); n > 0 {
+		return lipgloss.NewStyle().Background(theme.Surface).Render(strings.Repeat(" ", n))
+	}
+	return ""
+}
+
+func toolbarSurfaceGap(n int) string {
+	if n <= 0 {
+		return ""
+	}
+	return lipgloss.NewStyle().Background(theme.Surface).Render(strings.Repeat(" ", n))
+}
+
 func (t *Toolbar) availWidth() int {
 	if t.width > 0 {
 		return t.width
@@ -137,7 +154,7 @@ func (t *Toolbar) fitRows() ([]string, []Rect) {
 			y++
 		}
 		if x > 0 {
-			rows[y] += strings.Repeat(" ", t.gap())
+			rows[y] += t.gapFill()
 			x += t.gap()
 		}
 		rects = append(rects, Rect{X: x, Y: y, W: w, H: 1})
@@ -185,7 +202,7 @@ func (t *Toolbar) truncateLayout(width int) ([]string, []Rect) {
 				rects = append(rects, Rect{X: width, Y: 0, W: 0, H: 1})
 				continue
 			}
-			row += strings.Repeat(" ", t.gap())
+			row += t.gapFill()
 			x += t.gap()
 		}
 		remaining := width - x
@@ -238,7 +255,7 @@ func (t *Toolbar) pageRow() string {
 		return left + right
 	}
 	gap := width - Width(left) - Width(middle) - Width(right)
-	return left + strings.Repeat(" ", max(0, gap/2)) + middle + strings.Repeat(" ", max(0, gap-gap/2)) + right
+	return left + toolbarSurfaceGap(max(0, gap/2)) + middle + toolbarSurfaceGap(max(0, gap-gap/2)) + right
 }
 
 // pageRects 按当前页码把换行布局的矩形映射到分页视图的命中坐标。

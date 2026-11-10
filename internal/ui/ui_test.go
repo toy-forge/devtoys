@@ -918,6 +918,9 @@ func TestLayoutSpaceAndHelpers(t *testing.T) {
 	if Space1 != 1 || Space2 != 2 || Space3 != 3 {
 		t.Fatal("space scale values are contractual")
 	}
+	if got := Width(CanvasGutter(Space3)); got != Space3 {
+		t.Fatalf("CanvasGutter width = %d, want %d", got, Space3)
+	}
 	if got := IconCell("i", 2); got != "i " || Width(got) != 2 {
 		t.Fatalf("IconCell narrow = %q", got)
 	}

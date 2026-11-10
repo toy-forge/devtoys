@@ -41,6 +41,7 @@ type Picker struct {
 	entries				[]entry
 	cursor, offset, width, height	int
 	err				error
+	loading				string
 	multiple, confirmed		bool
 	selected			map[string]bool
 	selection			[]string
@@ -342,8 +343,13 @@ func (p *Picker) hintLine(innerW int) string {
 	if p.multiple {
 		hint = fmt.Sprintf("Space/click select · Ctrl+O open · %d selected", len(p.selection))
 	}
-	if p.err != nil {
+	switch {
+	case p.err != nil:
 		hint, style = "Error: "+displayName(p.err.Error()), theme.ErrorStyle()
+	case p.loading != "":
+		// 读取可能是 10 MiB 图片解码，期间给出可见进度与取消路径。
+		hint = "Opening " + displayName(p.loading) + "…  ·  esc cancels"
+		style = lipgloss.NewStyle().Foreground(theme.Blue)
 	}
 	return " " + style.Render(ansi.Truncate(hint, max(0, innerW-2), "…"))
 }
@@ -421,6 +427,12 @@ func (p *Picker) Update(msg tea.Msg) string {
 
 // SetError reports an operation error without leaving the picker.
 func (p *Picker) SetError(err error)	{ p.err = err }
+
+// SetLoading shows a progress hint for the file being read; esc still cancels.
+func (p *Picker) SetLoading(name string)	{ p.loading = name }
+
+// ClearLoading removes the progress hint.
+func (p *Picker) ClearLoading()	{ p.loading = "" }
 
 func displayName(s string) string {
 	return strings.Map(func(r rune) rune {

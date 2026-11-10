@@ -80,6 +80,8 @@ func (m *Model) Category() string	{ return "text" }
 func (m *Model) Icon() string		{ return "󰈙" }
 func (m *Model) Description() string	{ return "Count characters, words and lines" }
 
+func (m *Model) PaneStatusHints() []ui.StatusHint { return m.ws.StatusHints() }
+
 // Init 满足 bubbletea 模型接口。
 func (m *Model) Init() tea.Cmd	{ return nil }
 

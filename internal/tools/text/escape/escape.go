@@ -7,6 +7,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/toy-forge/devtoys/internal/toolkit"
+	"github.com/toy-forge/devtoys/internal/ui"
 )
 
 var escaper = strings.NewReplacer("\\", "\\\\", "\n", "\\n", "\r", "\\r", "\t", "\\t", "\b", "\\b", "\f", "\\f", "\"", "\\\"")
@@ -41,6 +42,8 @@ func (*tool) ShortTitle() string	{ return "Escape / Unescape" }
 func (*tool) Category() string		{ return "text" }
 func (*tool) Icon() string		{ return "󰘦" }
 func (*tool) Description() string	{ return "Escape or unescape special characters in text" }
+
+func (t *tool) PaneStatusHints() []ui.StatusHint { return t.ws.StatusHints() }
 func (*tool) Init() tea.Cmd		{ return nil }
 func (t *tool) action() string {
 	if t.encode {

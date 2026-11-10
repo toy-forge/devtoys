@@ -104,6 +104,8 @@ func (m *Model) Category() string	{ return "generators" }
 func (m *Model) Icon() string		{ return "󰌾" }
 func (m *Model) Description() string	{ return "Generate a random password" }
 
+func (m *Model) PaneStatusHints() []ui.StatusHint { return m.ws.StatusHints() }
+
 func (m *Model) Init() tea.Cmd	{ return nil }
 
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {

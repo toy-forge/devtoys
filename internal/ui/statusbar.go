@@ -86,8 +86,11 @@ func surfaceSeg(fg theme.Color, bold bool, text string) string {
 // 前导 1 列、token 间 Space2——宿主命中算术（x+=width+Space2）的依据。
 func (s *StatusBar) leftView() string {
 	tokens := s.tokens
-	if tokens == nil {
+	if tokens == nil && strings.TrimSpace(s.Left) != "" {
 		tokens = []StatusToken{{Label: s.Left}}
+	}
+	if len(tokens) == 0 && strings.TrimSpace(s.Left) == "" {
+		return surfaceSeg(theme.Text, false, " ")
 	}
 	parts := make([]string, 0, 2*len(tokens)+1)
 	parts = append(parts, surfaceSeg(theme.Text, false, " "))
@@ -96,8 +99,8 @@ func (s *StatusBar) leftView() string {
 			parts = append(parts, surfaceSeg(theme.Text, false, strings.Repeat(" ", Space2)))
 		}
 		if token.Clickable {
-			// 可点击 token 是链接式控件：Accent 粗体文字压在 Control 填充上。
-			parts = append(parts, lipgloss.NewStyle().Foreground(theme.Accent).Background(theme.Control).Bold(true).Render(token.Label))
+			// 可点击 token：Accent 粗体链式样式（无 Control 胶囊），与右侧 help 行高一致。
+			parts = append(parts, lipgloss.NewStyle().Foreground(theme.Accent).Background(theme.Surface).Bold(true).Render(token.Label))
 			continue
 		}
 		parts = append(parts, surfaceSeg(theme.Text, true, token.Label))

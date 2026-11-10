@@ -2,6 +2,7 @@ package app
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -9,6 +10,9 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
+
+	"github.com/toy-forge/devtoys/internal/toolkit"
+	"github.com/toy-forge/devtoys/internal/ui"
 )
 
 // press 把一条消息交给模型并返回新模型（测试用的值进值出辅助）。
@@ -76,14 +80,97 @@ func TestKeyboardCategoryFocusAndSearch(t *testing.T) {
 	}
 }
 
-func TestCategoryColumnOnlyShownForAllTools(t *testing.T) {
+func TestAllToolsClustersByCategory(t *testing.T) {
 	m := press(t, New(), tea.WindowSizeMsg{Width: 120, Height: 30})
-	if !strings.Contains(m.columnHeader(m.innerWidth()), "CATEGORY") {
-		t.Fatal("All tools should show the category column")
+	// All tools 视图：每个类别前插一条不可选中的分组标题，类别不再占列。
+	sections := 0
+	for _, item := range m.tools.Items() {
+		if isSectionItem(item) {
+			sections++
+		}
 	}
-	m = press(t, m, tea.MouseMsg{X: 4, Y: sidebarHeaderRows + 1, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress})
+	if sections != len(toolkit.Categories()) {
+		t.Fatalf("sections=%d, want %d", sections, len(toolkit.Categories()))
+	}
 	if strings.Contains(m.columnHeader(m.innerWidth()), "CATEGORY") {
-		t.Fatal("a category page should hide the redundant category column")
+		t.Fatal("category is carried by section headers, not a column")
+	}
+	// 初始游标落在工具上，不停在分组标题。
+	if isSectionItem(m.tools.SelectedItem()) {
+		t.Fatal("cursor started on a section header")
+	}
+	// 单类别视图没有分组标题。
+	m = press(t, m, tea.MouseMsg{X: 4, Y: sidebarHeaderRows + 1, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress})
+	for _, item := range m.tools.Items() {
+		if isSectionItem(item) {
+			t.Fatal("a category page should not repeat a section header")
+		}
+	}
+}
+
+func TestFilterFeedbackAndRecoverableEmptyState(t *testing.T) {
+	m := press(t, New(), tea.WindowSizeMsg{Width: 100, Height: 20})
+	m.tools.SetFilterText("json")
+	want := fmt.Sprintf("%d of %d tools", m.visibleToolCount(), m.toolCount())
+	if header := ansi.Strip(strings.Join(m.browseHeader(), "\n")); !strings.Contains(header, want) {
+		t.Fatalf("filtered header = %q, want %q", header, want)
+	}
+	m.tools.SetFilterText("zzz")
+	body := ansi.Strip(m.listBody())
+	if !strings.Contains(body, `No tools match "zzz".`) || !strings.Contains(body, "esc clears the search.") {
+		t.Fatalf("empty filter state is not recoverable: %q", body)
+	}
+}
+
+func TestListOverflowCue(t *testing.T) {
+	short := press(t, New(), tea.WindowSizeMsg{Width: 100, Height: 12})
+	if header := ansi.Strip(strings.Join(short.browseHeader(), "\n")); !strings.Contains(header, "↓ more") {
+		t.Fatalf("overflow cue missing: %q", header)
+	}
+	tall := press(t, New(), tea.WindowSizeMsg{Width: 100, Height: 70})
+	if header := ansi.Strip(strings.Join(tall.browseHeader(), "\n")); strings.Contains(header, "more") {
+		t.Fatalf("overflow cue shown when everything fits: %q", header)
+	}
+}
+
+func TestSectionHeadersAreNotSelectable(t *testing.T) {
+	m := press(t, New(), tea.WindowSizeMsg{Width: 120, Height: 40})
+	items := m.tools.VisibleItems()
+	// 一路向下：游标只会停在工具行，不会停在分组标题。
+	for i := 0; i < len(items)+2; i++ {
+		m = press(t, m, tea.KeyMsg{Type: tea.KeyDown})
+		if isSectionItem(m.tools.SelectedItem()) {
+			t.Fatalf("cursor stopped on a section at step %d", i)
+		}
+	}
+	// 从 ENCODERS 的第一个工具向上：跳到 CONVERTERS 的最后一个工具，跳过标题。
+	encoders := 0
+	for i, item := range items {
+		if entry, ok := item.(listItem); ok && entry.kind == itemSection && entry.category == "encoders" {
+			encoders = i
+			break
+		}
+	}
+	m.tools.Select(encoders + 1)
+	before := m.tools.SelectedItem().(listItem)
+	m = press(t, m, tea.KeyMsg{Type: tea.KeyUp})
+	after := m.tools.SelectedItem().(listItem)
+	if isSectionItem(after) || after.category != "converters" || after.title == before.title {
+		t.Fatalf("up from first encoder = %q (%s)", after.title, after.category)
+	}
+}
+
+func TestSectionHeaderClickIsInert(t *testing.T) {
+	m := press(t, New(), tea.WindowSizeMsg{Width: 120, Height: 40})
+	// 第 0 行是 CONVERTERS 分组标题；点击它不打开任何工具。
+	m = press(t, m, tea.MouseMsg{X: m.contentX() + 10, Y: browseHeaderRows, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress})
+	if m.mode != modeBrowse || m.active != nil {
+		t.Fatalf("section header opened a tool: mode=%v active=%v", m.mode, m.active)
+	}
+	// 第 1 行是第一个工具：点击照常打开。
+	m = press(t, m, tea.MouseMsg{X: m.contentX() + 10, Y: browseHeaderRows + 1, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress})
+	if m.mode != modeTool || m.active == nil {
+		t.Fatal("first tool row did not open")
 	}
 }
 
@@ -92,7 +179,7 @@ func TestToolRowsFillExactWidth(t *testing.T) {
 		m := press(t, New(), size)
 		for i := range m.tools.VisibleItems() {
 			var buf bytes.Buffer
-			toolDelegate{hover: -1, focused: true, showCategory: m.category == ""}.Render(&buf, m.tools, i, m.tools.VisibleItems()[i])
+			toolDelegate{hover: -1, focused: true}.Render(&buf, m.tools, i, m.tools.VisibleItems()[i])
 			if got := lipgloss.Width(buf.String()); got != m.tools.Width() {
 				t.Fatalf("%dx%d row %d width=%d, want %d", size.Width, size.Height, i, got, m.tools.Width())
 			}
@@ -115,20 +202,24 @@ func TestBrowseLayoutFitsTerminal(t *testing.T) {
 	}
 }
 
+func TestToolRowPrefixMatchesSpacingScale(t *testing.T) {
+	if toolRowPrefix != 1+2+ui.Space1 {
+		t.Fatalf("toolRowPrefix = %d, want 1+iconSlot+Space1 = %d", toolRowPrefix, 1+2+ui.Space1)
+	}
+	if columnGap != ui.Space2 {
+		t.Fatalf("columnGap = %d, want Space2", columnGap)
+	}
+}
+
 func TestToolColumnsAccountForEveryCell(t *testing.T) {
 	for width := 30; width <= 140; width++ {
-		for _, showCategory := range []bool{false, true} {
-			cols := newToolColumns(width, showCategory)
-			total := toolRowPrefix + cols.title
-			if cols.showCategory {
-				total += columnGap + toolCatWidth
-			}
-			if cols.showDesc {
-				total += columnGap + cols.desc
-			}
-			if total != width {
-				t.Fatalf("width=%d category=%v: columns sum to %d", width, showCategory, total)
-			}
+		cols := newToolColumns(width)
+		total := toolRowPrefix + cols.title
+		if cols.showDesc {
+			total += columnGap + cols.desc
+		}
+		if total != width {
+			t.Fatalf("width=%d: columns sum to %d", width, total)
 		}
 	}
 }

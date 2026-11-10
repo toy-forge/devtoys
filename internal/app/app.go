@@ -5,7 +5,9 @@
 package app
 
 import (
+	"fmt"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 
@@ -75,6 +77,7 @@ func New() Model {
 	m := Model{mode: modeBrowse, tools: newToolList(), nav: newNavList()}
 	m.nav.SetItems(navItems())
 	m.tools.SetItems(m.toolItems())
+	m.settleToolCursor(1)
 	m.selectNav()
 	m.sync()
 	return m
@@ -107,9 +110,19 @@ func (m Model) openPicker() Model {
 }
 
 // Update 先按消息更新模型，再把委托的焦点与 hover 同步到最新状态。
+// 浏览页的游标若落在类别分组标题上，按移动方向挪到相邻工具：
+// 分组标题不可选中，键盘与滚轮都不会停在它上面。
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	previous := m.tools.Index()
 	next, cmd := m.update(msg)
 	if model, ok := next.(Model); ok {
+		if model.mode == modeBrowse && model.picker == nil && model.preview == nil {
+			direction := 1
+			if model.tools.Index() < previous {
+				direction = -1
+			}
+			model.settleToolCursor(direction)
+		}
 		model.sync()
 		return model, cmd
 	}
@@ -163,6 +176,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.loading = false
+		m.picker.ClearLoading()
 		if result.err != nil {
 			m.picker.SetError(result.err)
 			return m, nil
@@ -178,6 +192,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.loading = false
+		m.picker.ClearLoading()
 		if receiver, ok := m.active.(toolkit.BinaryImporter); ok && receiver.AcceptsBinary() && result.data != nil && result.image == nil {
 			m.picker = nil
 			return m.forwardToActive(toolkit.BinaryImportMsg{Data: result.data, Name: result.name})
@@ -284,6 +299,7 @@ func (m Model) updatePicker(msg tea.Msg) (tea.Model, tea.Cmd) {
 		path := m.picker.Update(msg)
 		if paths := m.picker.TakeSelection(); len(paths) > 0 {
 			m.loading = true
+			m.picker.SetLoading(fmt.Sprintf("%d images", len(paths)))
 			return m, readSelectedImages(m.picker, paths)
 		}
 		if path != "" {
@@ -292,6 +308,7 @@ func (m Model) updatePicker(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m.forwardToActive(toolkit.FilePathImportMsg{Path: path})
 			}
 			m.loading = true
+			m.picker.SetLoading(filepath.Base(path))
 			return m, readSelectedFile(m.picker, path)
 		}
 	}
@@ -479,7 +496,7 @@ func (m Model) browseMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 		}
 	case tea.MouseButtonLeft:
 		// 搜索行：点击即开始过滤。
-		if msg.Y == browseHeaderRows-3 && m.tools.FilterState() != list.Filtering {
+		if msg.Y == browseSearchRow && m.tools.FilterState() != list.Filtering {
 			m.navFocus = false
 			var cmd tea.Cmd
 			m.tools, cmd = m.tools.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}})
@@ -616,6 +633,7 @@ func (m Model) statusHints() []ui.StatusHint {
 		if m.acceptsFiles() {
 			hints = append(hints, ui.StatusHint{Key: "ctrl+f", Desc: "open file"})
 		}
+		hints = append(hints, paneHintsFromActive(m.active)...)
 		return append(hints, ui.StatusHint{Key: "tab", Desc: "focus"}, ui.StatusHint{Key: "ctrl+y", Desc: "copy"})
 	}
 	if m.navFocus {

@@ -99,6 +99,35 @@ func TestFileImportAndCancellation(t *testing.T) {
 	}
 }
 
+func TestFileReadShowsLoadingAndClearsOnResult(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "input.txt")
+	if err := os.WriteFile(path, []byte("hello"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	tool := &testTool{}
+	m := New()
+	m.active = tool
+	m.mode = modeTool
+	m.width = 100
+	m.height = 30
+	m.picker = filepicker.New(dir)
+	m.picker.SetSize(68, 29)
+	next, cmd := m.Update(tea.MouseMsg{X: 42, Y: 4, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress})
+	m = next.(Model)
+	if cmd == nil || !m.loading {
+		t.Fatalf("file read not started: cmd=%v loading=%v", cmd != nil, m.loading)
+	}
+	if view := m.picker.View(); !strings.Contains(view, "Opening input.txt") || !strings.Contains(view, "esc cancels") {
+		t.Fatalf("loading state not visible in picker: %s", view)
+	}
+	next, _ = m.Update(cmd())
+	m = next.(Model)
+	if m.loading || m.picker != nil || tool.pasted != "hello" {
+		t.Fatalf("loading did not resolve: loading=%v picker=%v pasted=%q", m.loading, m.picker != nil, tool.pasted)
+	}
+}
+
 func TestReadTextFileRejectsBinaryAndLargeFiles(t *testing.T) {
 	dir := t.TempDir()
 	for _, tc := range []struct {

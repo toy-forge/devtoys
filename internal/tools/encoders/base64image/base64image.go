@@ -24,6 +24,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/toy-forge/devtoys/internal/imaging"
 	"github.com/toy-forge/devtoys/internal/toolkit"
+	"github.com/toy-forge/devtoys/internal/ui"
 	"github.com/toy-forge/devtoys/internal/toolkit/imageview"
 	"github.com/woozymasta/tga"
 )
@@ -66,6 +67,8 @@ func (*tool) ShortTitle() string	{ return "Base64 Image" }
 func (*tool) Category() string		{ return "encoders" }
 func (*tool) Icon() string		{ return "󰋩" }
 func (*tool) Description() string	{ return "Encode an image as a data URI or preview a Base64 image" }
+
+func (t *tool) PaneStatusHints() []ui.StatusHint { return t.ws.StatusHints() }
 func (*tool) AcceptsImages() bool	{ return true }
 func (*tool) Init() tea.Cmd		{ return nil }
 func (t *tool) Update(msg tea.Msg) (tea.Model, tea.Cmd) {

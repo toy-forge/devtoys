@@ -14,6 +14,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 
 	"github.com/toy-forge/devtoys/internal/toolkit"
+	"github.com/toy-forge/devtoys/internal/ui"
 	"github.com/toy-forge/devtoys/internal/tools/generators/internal/optbar"
 )
 
@@ -95,6 +96,8 @@ func (m *Model) ShortTitle() string	{ return "Lorem Ipsum" }
 func (m *Model) Category() string	{ return "generators" }
 func (m *Model) Icon() string		{ return "󰉶" }
 func (m *Model) Description() string	{ return "Generate Lorem Ipsum placeholder text" }
+
+func (m *Model) PaneStatusHints() []ui.StatusHint { return m.ws.StatusHints() }
 
 func (m *Model) Init() tea.Cmd	{ return nil }
 

@@ -91,6 +91,15 @@ func withBackground(line string, bg theme.Color) string {
 // 「内层 reset 取消外层背景」问题域影响，用本帮手注入主题底色。
 func WithBackground(line string, bg theme.Color) string	{ return withBackground(line, bg) }
 
+// CanvasGutter 渲染 n 列画布底色缝（双栏 gutter）；布局矩形须预留同宽列，
+// 渲染与命中共用同一常量（Workspace / ThreePane 的 columnGap）。
+func CanvasGutter(columns int) string {
+	if columns <= 0 {
+		return ""
+	}
+	return lipgloss.NewStyle().Background(theme.Background).Render(strings.Repeat(" ", columns))
+}
+
 // Rect 是组件坐标体系里的矩形（含 W/H 本身）。
 type Rect struct {
 	X, Y, W, H int

@@ -18,6 +18,7 @@ import (
 	"github.com/lestrrat-go/helium"
 
 	"github.com/toy-forge/devtoys/internal/toolkit"
+	"github.com/toy-forge/devtoys/internal/ui"
 )
 
 // 词法标记类型。
@@ -94,6 +95,8 @@ func (t *tool) ShortTitle() string	{ return "XML" }
 func (t *tool) Category() string	{ return "formatters" }
 func (t *tool) Icon() string		{ return "󰗀" }
 func (t *tool) Description() string	{ return "Indent and validate XML" }
+
+func (t *tool) PaneStatusHints() []ui.StatusHint { return t.ws.StatusHints() }
 
 // Init 完成首次渲染。
 func (t *tool) Init() tea.Cmd {

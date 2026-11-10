@@ -20,6 +20,38 @@ func forceTrueColor(t *testing.T) {
 	lipgloss.SetColorProfile(termenv.TrueColor)
 }
 
+func TestPanelToolbarRowCarriesSurfaceGap(t *testing.T) {
+	prev := theme.Dark()
+	defer theme.SetDark(prev)
+	theme.SetDark(true)
+	forceTrueColor(t)
+	p := NewPanel("Output")
+	p.SetSize(52, 6)
+	p.SetToolbar(Button{Label: "Copy"}, Button{Label: "Clear"})
+	view, _ := p.Render("text")
+	top := strings.Split(view, "\n")[0]
+	if !strings.Contains(top, surfaceBG) {
+		t.Fatalf("panel title row missing Surface bg: %q", top)
+	}
+	// 两颗内联按钮之间必须有 Surface 缝（reset 之后不能落回透明格）。
+	if strings.Count(top, "\x1b[0m\x1b["+surfaceBG+"m") < 2 {
+		t.Fatalf("panel title row bg not re-injected between toolbar buttons: %q", top)
+	}
+}
+
+func TestToolbarGapCarriesSurface(t *testing.T) {
+	prev := theme.Dark()
+	defer theme.SetDark(prev)
+	theme.SetDark(true)
+	forceTrueColor(t)
+	tb := NewToolbar(Button{Label: "A", Inline: true}, Button{Label: "B", Inline: true})
+	tb.SetSize(24, 1)
+	view := tb.View()
+	if !strings.Contains(view, surfaceBG) {
+		t.Fatalf("toolbar gap missing Surface bg: %q", view)
+	}
+}
+
 func TestPanelRowsCarrySurfaceBackground(t *testing.T) {
 	prev := theme.Dark()
 	defer theme.SetDark(prev)

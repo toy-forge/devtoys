@@ -33,8 +33,10 @@ const (
 	railMin	= 48
 	// contentPad 是内容区左右留白（Space2）。
 	contentPad	= ui.Space2
-	// browseHeaderRows 是浏览页页头行数：标题、副标题、空行、搜索行、空行、列标题。
-	browseHeaderRows	= 6
+	// browseHeaderRows 是浏览页页头行数：标题行、搜索行、列标题。
+	browseHeaderRows	= 3
+	// browseSearchRow 是搜索行在页头内的行号（点击即开始过滤）。
+	browseSearchRow	= 1
 	// toolHeaderRows 是工具页页头行数：标题行 + 空行。
 	toolHeaderRows	= 2
 	// sidebarHeaderRows 是侧栏品牌行数：品牌行 + 空行。
@@ -172,18 +174,22 @@ func (m Model) sidebarBox() string {
 	return m.sidebarView()
 }
 
-// browseHeader 是浏览页页头的六行：标题（左）+ 数量（右）、副标题、
-// 空行、搜索行、空行、列标题。行数必须等于 browseHeaderRows。
+// browseHeader 是浏览页页头的三行：标题（左）+ 数量（右）、搜索行、
+// 列标题。行数必须等于 browseHeaderRows。
 func (m Model) browseHeader() []string {
 	iw := m.innerWidth()
-	count := theme.MutedStyle().Render(fmt.Sprintf("%d tools", len(m.tools.Items())))
-	title := theme.TitleStyle().Render(m.browseTitle())
+	count := fmt.Sprintf("%d tools", m.toolCount())
+	if m.tools.FilterState() != list.Unfiltered {
+		// 过滤时给出实时反馈：命中的工具数而不是类别总数。
+		count = fmt.Sprintf("%d of %d tools", m.visibleToolCount(), m.toolCount())
+	}
+	if cue := m.scrollCue(); cue != "" {
+		count += " · " + cue
+	}
+	title := theme.TitleStyle().Render(" " + m.browseTitle())
 	return []string{
-		spread(iw, title, count),
-		theme.MutedStyle().Render("Choose a tool to open it."),
-		"",
+		spread(iw, title, theme.MutedStyle().Render(count)),
 		m.searchRow(iw),
-		"",
 		m.columnHeader(iw),
 	}
 }
@@ -207,10 +213,12 @@ func (m Model) searchRow(iw int) string {
 		line = m.tools.FilterInput.View()
 		line = spread(iw, line, theme.MutedStyle().Render("enter apply · esc clear"))
 	case list.FilterApplied:
-		query := theme.LabelStyle().Render(" 󰍉  " + m.tools.FilterInput.Value())
+		icon := ui.IconCell(theme.Icon(theme.IconSearch), 2)
+		query := theme.LabelStyle().Render(" " + icon + strings.Repeat(" ", ui.Space1) + m.tools.FilterInput.Value())
 		line = spread(iw, query, theme.MutedStyle().Render("esc clear"))
 	default:
-		search := theme.MutedStyle().Render(" " + theme.Icon(theme.IconSearch) + "  Search tools…")
+		icon := ui.IconCell(theme.Icon(theme.IconSearch), 2)
+		search := theme.MutedStyle().Render(" " + icon + strings.Repeat(" ", ui.Space1) + "Search tools…")
 		line = spread(iw, search, theme.MutedStyle().Render("/ "))
 	}
 	return surfaceRow(line, iw)
@@ -218,26 +226,29 @@ func (m Model) searchRow(iw int) string {
 
 // columnHeader 渲染列标题，列宽与 toolDelegate 共用 newToolColumns。
 func (m Model) columnHeader(iw int) string {
-	cols := newToolColumns(iw, m.category == "")
+	cols := newToolColumns(iw)
 	style := theme.MutedStyle().Bold(true)
-	line := strings.Repeat(" ", toolRowPrefix) + cell("TOOL", cols.title, style)
-	if cols.showCategory {
-		line += strings.Repeat(" ", columnGap) + cell("CATEGORY", toolCatWidth, style)
-	}
+	line := style.Render(strings.Repeat(" ", toolRowPrefix)) + cell("TOOL", cols.title, style)
 	if cols.showDesc {
-		line += strings.Repeat(" ", columnGap) + cell("DESCRIPTION", cols.desc, style)
+		gap := style.Render(strings.Repeat(" ", columnGap))
+		line += gap + cell("DESCRIPTION", cols.desc, style)
 	}
 	return ansi.Truncate(line, iw, "")
 }
 
-// listBody 渲染工具列表；没有匹配项时给出空状态提示。
+// listBody 渲染工具列表；没有匹配项时给出可恢复的空状态。
 func (m Model) listBody() string {
 	if len(m.tools.VisibleItems()) == 0 {
-		message := "No tools available."
+		message, hint := "No tools available.", ""
 		if m.tools.FilterState() != list.Unfiltered {
 			message = fmt.Sprintf("No tools match %q.", m.tools.FilterInput.Value())
+			hint = "esc clears the search."
 		}
-		return theme.MutedStyle().Render(" " + message)
+		lines := []string{theme.MutedStyle().Render(" " + message)}
+		if hint != "" {
+			lines = append(lines, theme.MutedStyle().Render(" "+hint))
+		}
+		return strings.Join(lines, "\n")
 	}
 	return m.tools.View()
 }
@@ -251,8 +262,8 @@ func (m Model) browseView() string {
 func (m Model) toolHeader() string {
 	chip := lipgloss.NewStyle().Foreground(theme.BlueBright).Bold(true).Render(theme.ToolIcon(m.active.ID()))
 	title := theme.TitleStyle().Render(m.active.Title())
-	crumb := theme.MutedStyle().Render("·  " + groupTitle(m.active.Category()))
-	line := chip + " " + title + "  " + crumb
+	crumb := theme.MutedStyle().Render("· " + groupTitle(m.active.Category()))
+	line := " " + chip + strings.Repeat(" ", ui.Space1) + title + strings.Repeat(" ", ui.Space2) + crumb
 	return ansi.Truncate(line, m.innerWidth(), "…") + "\n\n"
 }
 
@@ -280,7 +291,7 @@ func (m Model) contentView() string {
 // fitContent 把正文铺到 innerWidth×bodyHeight，再左右各加 contentPad 列留白。
 func (m Model) fitContent(body string) string {
 	inner := ui.Fill(body, m.innerWidth(), m.bodyHeight())
-	pad := strings.Repeat(" ", contentPad)
+	pad := lipgloss.NewStyle().Background(theme.Background).Render(strings.Repeat(" ", contentPad))
 	lines := strings.Split(inner, "\n")
 	for i, line := range lines {
 		lines[i] = pad + line + pad

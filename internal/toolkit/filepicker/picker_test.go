@@ -38,6 +38,20 @@ func TestNavigateAndSelectWithMouse(t *testing.T) {
 	}
 }
 
+func TestLoadingHintShowsTargetAndCancel(t *testing.T) {
+	p := New(t.TempDir())
+	p.SetSize(80, 14)
+	p.SetLoading("photo.png")
+	view := p.View()
+	if !strings.Contains(view, "Opening photo.png") || !strings.Contains(view, "esc cancels") {
+		t.Fatalf("loading hint missing:\n%s", view)
+	}
+	p.ClearLoading()
+	if strings.Contains(p.View(), "Opening photo.png") {
+		t.Fatal("loading hint remained after ClearLoading")
+	}
+}
+
 func TestViewIsCenteredModalOfFullArea(t *testing.T) {
 	dir := t.TempDir()
 	p := New(dir)

@@ -181,12 +181,14 @@ func (m Modal) titleRow(inner int) string {
 		}
 		return st.Render(s)
 	}
+	side := strings.Repeat(" ", Space2)
 	if m.Danger {
-		label := ansi.Truncate(m.Title, max(1, inner-4), "…")
-		return seg(theme.Danger, false, " "+theme.StatusIcon(3)) + seg(theme.Text, true, " "+label+" ")
+		icon := seg(theme.Danger, false, side+theme.StatusIcon(3)+" ")
+		label := ansi.Truncate(m.Title, max(1, inner-Width(icon)-Space2), "…")
+		return icon + seg(theme.Text, true, label+side)
 	}
-	label := ansi.Truncate(m.Title, max(1, inner-2), "…")
-	return seg(theme.Text, true, " "+label+" ")
+	label := ansi.Truncate(m.Title, max(1, inner-2*Space2), "…")
+	return seg(theme.Text, true, side+label+side)
 }
 
 // buttonRowOffset 返回按钮行在盒子内的起始列（含左边框 1 列）：

@@ -13,6 +13,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/toy-forge/devtoys/internal/toolkit"
+	"github.com/toy-forge/devtoys/internal/ui"
 )
 
 // tool 是 SQL 格式化工具模型。
@@ -63,6 +64,8 @@ func (t *tool) ShortTitle() string	{ return "SQL" }
 func (t *tool) Category() string	{ return "formatters" }
 func (t *tool) Icon() string		{ return "󰆼" }
 func (t *tool) Description() string	{ return "Format SQL statements" }
+
+func (t *tool) PaneStatusHints() []ui.StatusHint { return t.ws.StatusHints() }
 
 func (t *tool) Init() tea.Cmd	{ return t.schedule() }
 

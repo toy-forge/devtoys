@@ -37,9 +37,9 @@ const (
 	FocusOutput			// 输出区
 )
 
-// 间距一律引用刻度：两栏之间 = Space2（章节级留白，两块面板不贴边）、
+// 间距一律引用刻度：两栏之间 = Space3（章节缝，两块面板不贴边）、
 // 行缝 = Space1（组内缝）、窗格与底部条之间 = Space1（底部条不贴面板边框）。
-const workspaceColumnGap = ui.Space2
+const workspaceColumnGap = ui.Space3
 const workspaceRowGap = ui.Space1
 const workspaceFooterGap = ui.Space1
 
@@ -1007,7 +1007,7 @@ func (w *Workspace) View() string {
 		return w.joinFooter(output)
 	}
 	if w.compact {
-		rows := []string{w.tabsBar.View()}
+		rows := []string{ui.WithBackground(w.tabsBar.View(), theme.Background)}
 		if w.inputAccessoryRect.H > 0 {
 			rows = append(rows, w.inputAccessoryView(max(1, w.width)), "")
 		}
@@ -1060,7 +1060,7 @@ func (w *Workspace) View() string {
 			outputColumn,
 		)
 	}
-	body := lipgloss.JoinHorizontal(lipgloss.Top, inputColumn, strings.Repeat(" ", workspaceColumnGap), outputColumn)
+	body := lipgloss.JoinHorizontal(lipgloss.Top, inputColumn, ui.CanvasGutter(workspaceColumnGap), outputColumn)
 	return w.joinFooter(body)
 }
 
@@ -1069,9 +1069,15 @@ func (w *Workspace) renderInputPane() string {
 }
 
 func (w *Workspace) renderOutputPane() string {
+	// 空态教用途：输出区没有任何可见内容时给一行弱化占位，而不是留一块
+	// 空白面板。直接写 viewport 的加载态（Formatting…）不算空，原样显示。
+	content := w.Output.View()
+	if w.Err == nil && strings.TrimSpace(ansi.Strip(content)) == "" {
+		content = theme.MutedStyle().Render("Output appears here.")
+	}
 	// 焦点表达式与 layoutPanes 的 SetFocused 同源：同一时刻至多一个
 	// 容器持有焦点环。
-	return w.renderPane(w.outputPane, w.outputRect, w.outputLabel(), w.Focus == FocusOutput || w.outputOnly || w.outputExpanded, w.outputControls(), w.OutputControlsDisabled, w.Output.View())
+	return w.renderPane(w.outputPane, w.outputRect, w.outputLabel(), w.Focus == FocusOutput || w.outputOnly || w.outputExpanded, w.outputControls(), w.OutputControlsDisabled, content)
 }
 
 func (w *Workspace) focusedPaneView() string {
@@ -1165,23 +1171,30 @@ func paneExpandControl(expanded bool) string {
 	return "Expand"
 }
 
-// footerView 渲染底部单行状态条：左侧上下文提示，右侧按钮组或 Toast。
-func (w *Workspace) footerView() string {
-	w.footer.SetWidth(max(1, w.width))
-	left := "click to edit · scroll to browse"
+// StatusHints 供外壳状态栏合并展示；Workspace 底栏只保留操作钮，避免双行快捷键。
+func (w Workspace) StatusHints() []ui.StatusHint {
 	if w.outputOnly {
-		left = "scroll to browse"
+		return []ui.StatusHint{{Key: "scroll", Desc: "output"}}
+	}
+	hints := []ui.StatusHint{
+		{Key: "click", Desc: "edit"},
+		{Key: "scroll", Desc: "output"},
 	}
 	if w.outputExtendable {
-		label := "Expand"
+		desc := "expand"
 		if w.outputExpanded {
-			label = "Restore"
+			desc = "restore"
 		}
-		left += " · alt+E " + label
+		hints = append(hints, ui.StatusHint{Key: "alt+e", Desc: desc})
 	}
-	// 页脚左侧走结构化 token 通道；Workspace 页脚无点击动作，
-	// 单个 Clickable=false token 渲染为 Text bold。
-	w.footer.SetLeftTokens([]ui.StatusToken{{Label: left}})
+	return hints
+}
+
+// footerView 渲染底部单行状态条：右侧 Copy / 翻页；快捷键由 app.statusHints 展示。
+func (w *Workspace) footerView() string {
+	w.footer.SetWidth(max(1, w.width))
+	w.footer.SetLeft("")
+	w.footer.SetLeftTokens(nil)
 	w.footer.SetHints()
 	switch {
 	case w.Err != nil:

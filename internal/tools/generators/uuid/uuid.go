@@ -13,6 +13,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/toy-forge/devtoys/internal/toolkit"
+	"github.com/toy-forge/devtoys/internal/ui"
 	"github.com/toy-forge/devtoys/internal/tools/generators/internal/optbar"
 )
 
@@ -61,6 +62,8 @@ func (m *Model) ShortTitle() string	{ return "UUID" }
 func (m *Model) Category() string	{ return "generators" }
 func (m *Model) Icon() string		{ return "󰌆" }
 func (m *Model) Description() string	{ return "Generate UUIDs in batches" }
+
+func (m *Model) PaneStatusHints() []ui.StatusHint { return m.ws.StatusHints() }
 
 func (m *Model) Init() tea.Cmd	{ return nil }
 
