@@ -133,7 +133,12 @@ func (s *StatusBar) hintsView(room int) string {
 func (s *StatusBar) rightView(room int) string {
 	if s.toast != nil {
 		// Toast pill 自带语义底色；外层只补 Surface，pill 内部分段不受影响。
-		return withBackground(s.toast.View(), theme.Surface)
+		// 超宽时由 Toast 自己以 … 收尾，而不是被外层硬切掉半句话。
+		view := s.toast.View()
+		if room > 0 {
+			view = s.toast.ViewTruncate(room)
+		}
+		return withBackground(view, theme.Surface)
 	}
 	if len(s.Hints) > 0 {
 		// 段内的底色由 withBackground 注入（内层 reset 会取消外层背景）。

@@ -20,6 +20,13 @@ func outputOf(t *testing.T, expr string) (string, error) {
 	return m.ws.OutputText(), m.ws.Err
 }
 
+func TestEmptyStateTeachesInsteadOfShowingNothing(t *testing.T) {
+	m := New()
+	if out := m.ws.OutputText(); !strings.Contains(out, "Results appear here.") {
+		t.Fatalf("initial result pane is blank: %q", out)
+	}
+}
+
 func TestSimpleQuery(t *testing.T) {
 	out, err := outputOf(t, "$.store.book[*].title")
 	if err != nil {

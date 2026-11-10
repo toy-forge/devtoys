@@ -334,13 +334,13 @@ func (b *Bar) View() string {
 			title = "Config"
 		}
 		if b.width >= lipgloss.Width(pageLine)+lipgloss.Width(title)+2 {
-			pageLine += "  " + lipgloss.NewStyle().Foreground(theme.Text).Bold(true).Render(title)
+			pageLine += "  " + theme.Eyebrow(title)
 		}
 		return pageLine + "\n" + l.lines[min(b.page, len(l.lines)-1)]
 	}
 	view := strings.Join(l.lines, "\n")
 	if b.height > 0 {
-		heading := lipgloss.NewStyle().Foreground(theme.Text).Bold(true).Render("Configuration")
+		heading := theme.Eyebrow("Configuration")
 		view = heading + "\n" + view
 	}
 	return view
@@ -641,7 +641,7 @@ func (b *Bar) compactLayout() barLayout {
 // expandedLayout 渲染标题行 + 每选项一行（名称居左、控件贴右）+ 描述行。
 func (b *Bar) expandedLayout() barLayout {
 	l := barLayout{}
-	l.lines = append(l.lines, lipgloss.NewStyle().Foreground(theme.Text).Bold(true).Render("Configuration"))
+	l.lines = append(l.lines, theme.Eyebrow("Configuration"))
 	nameStyle := lipgloss.NewStyle().Foreground(theme.Text)
 	for orderIndex, ref := range b.optionOrder() {
 		if !b.optionVisible(ref) {

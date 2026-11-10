@@ -5,6 +5,11 @@ import (
 	"encoding/base64"
 	"strings"
 	"testing"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/x/ansi"
+
+	"github.com/toy-forge/devtoys/internal/toolkit"
 )
 
 // recalcOf 构造工具实例并按给定方向计算，返回输出与错误。
@@ -110,6 +115,36 @@ func TestEmptyInput(t *testing.T) {
 		if got != "" {
 			t.Fatalf("空输入应输出空串，得到 %q", got)
 		}
+	}
+}
+
+// TestRatioRowSpacing 比率条占据一行，且上下各留一行空白；
+// 之前插入两行会导致窗格底部出现双空行。
+func TestRatioRowSpacing(t *testing.T) {
+	tool := newTool()
+	tool.Update(tea.WindowSizeMsg{Width: 100, Height: 30})
+	tool.Input.SetValue("hello")
+	tool.Update(toolkit.InputClearedMsg{})
+	if !tool.showRatio {
+		t.Skip("ratio row hidden at this size")
+	}
+	lines := strings.Split(ansi.Strip(tool.View()), "\n")
+	ratioAt := -1
+	for i, line := range lines {
+		if strings.Contains(line, "Compression ratio") {
+			ratioAt = i
+			break
+		}
+	}
+	if ratioAt < 0 {
+		t.Fatal("ratio row missing")
+	}
+	// 比率条上方与下方都必须只有一行空白（下方是底部状态条）。
+	if above := lines[ratioAt-1]; strings.TrimSpace(above) != "" {
+		t.Fatalf("blank row above ratio expected, got %q", above)
+	}
+	if below := lines[ratioAt+1]; strings.TrimSpace(below) != "" {
+		t.Fatalf("blank row below ratio expected, got %q", below)
 	}
 }
 

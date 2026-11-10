@@ -77,7 +77,8 @@ func TestExpandedSettingsMouseControls(t *testing.T) {
 		t.Fatal("expected desktop layout at 80x24")
 	}
 	lines := strings.Split(b.View(), "\n")
-	if ansi.Strip(lines[0]) != "Configuration" || len(lines) != b.Height() {
+	// 分组标题的字符形态由 theme.Eyebrow 决定（大写）。
+	if ansi.Strip(lines[0]) != "CONFIGURATION" || len(lines) != b.Height() {
 		t.Fatalf("lines=%q height=%d", lines, b.Height())
 	}
 	if dec, inc, ok := b.StepRects(0); !ok {

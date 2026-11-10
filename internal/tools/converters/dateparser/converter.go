@@ -507,7 +507,7 @@ func (c *converter) View() string {
 	if c.headerHeight > 0 {
 		if c.desktopSettings() {
 			settings := strings.Split(c.header.View(c.values()...), "\n")
-			prefix += lipgloss.NewStyle().Foreground(theme.Text).Bold(true).Render("Configuration") + "\n" + settings[0] + "\n"
+			prefix += theme.Eyebrow("Configuration") + "\n" + settings[0] + "\n"
 			if len(settings) > 1 {
 				prefix += strings.Join(settings[1:], "\n") + "\n"
 			}
@@ -539,23 +539,27 @@ func (c *converter) View() string {
 // HandlesEscape 时区/单位下拉浮层展开时 esc 只收起浮层。
 func (c *converter) HandlesEscape() bool	{ return c.header.MenuOpen() }
 
-// footerView 渲染底行：ui.StatusBar——左句式，
-// 右端按键提示；已复制以 Toast 呈现（与 workspace footer 同语言）。
+// footerView 渲染底行：ui.StatusBar——右侧只保留 Copy；快捷键由外壳状态栏
+// 统一展示，避免同屏两行提示。
 func (c *converter) footerView() string {
 	bar := ui.NewStatusBar()
 	bar.SetWidth(max(1, c.width))
-	bar.SetLeftTokens([]ui.StatusToken{{Label: "click to edit · scroll to browse"}})
-	// 提示取最高频三段（format/zone 已有设置条 chip 承载），避免 88 列
-	// 溢出挤压左右分界。
-	bar.SetHints(
-		ui.StatusHint{Key: "alt+N", Desc: "now"},
-		ui.StatusHint{Key: "alt+E", Desc: "epoch"},
-		ui.StatusHint{Key: "ctrl+y", Desc: "copy"},
-	)
+	bar.SetLeftTokens(nil)
 	if c.copied {
 		bar.SetToast(ui.Toast{Level: ui.LevelSuccess, Message: "Copied to clipboard"})
 	}
 	return bar.View()
+}
+
+// PaneStatusHints 供外壳状态栏合并展示本工具独有的键。
+func (c *converter) PaneStatusHints() []ui.StatusHint {
+	return []ui.StatusHint{
+		{Key: "click", Desc: "edit"},
+		{Key: "scroll", Desc: "browse"},
+		{Key: "alt+n", Desc: "now"},
+		{Key: "alt+e", Desc: "epoch"},
+		{Key: "alt+[", Desc: "zone"},
+	}
 }
 
 func (c *converter) bodyRows() []formRow {

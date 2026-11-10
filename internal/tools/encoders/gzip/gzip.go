@@ -100,7 +100,9 @@ func (t *tool) View() string {
 	if t.showRatio {
 		ratio := lipgloss.NewStyle().Foreground(theme.BlueBright).Background(theme.Surface).Width(max(1, t.width-2)).Padding(0, 1).Render("Compression ratio  " + ratioPercent(t.ratio))
 		if footer := strings.LastIndexByte(workspace, '\n'); footer >= 0 {
-			workspace = workspace[:footer] + "\n\n" + ratio + "\n" + workspace[footer+1:]
+			// 保留工作区已有一行留白作比率条上方的间隔，另补一行落回底部条上方：
+			// 版面是「窗格 · 空行 · 比率 · 空行 · 底部条」，不再叠成两行空白。
+			workspace = workspace[:footer] + "\n" + ratio + "\n\n" + workspace[footer+1:]
 		} else {
 			workspace += "\n" + ratio
 		}

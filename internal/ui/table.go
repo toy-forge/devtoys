@@ -36,11 +36,12 @@ func FitWidth(text string, width int) string {
 	return text
 }
 
-// Header 渲染表头行：各列标题 Muted 粗体，与 Row 同列对齐。
+// Header 渲染表头行：各列标题走统一眉标角色（大写、Muted 粗体），
+// 与首页类别带、工具分区标题同一份字符形态；与 Row 同列对齐。
 func (t Table) Header() string {
 	cells := make([]string, len(t.Columns))
 	for i, col := range t.Columns {
-		cells[i] = theme.MutedStyle().Bold(true).Render(col.fit(col.Title))
+		cells[i] = theme.Eyebrow(col.fit(col.Title))
 	}
 	_, line := PlaceRow(cells, t.Gap)
 	return line

@@ -99,6 +99,9 @@ func (m *Model) Description() string	{ return "Generate Lorem Ipsum placeholder 
 
 func (m *Model) PaneStatusHints() []ui.StatusHint { return m.ws.StatusHints() }
 
+// OutputOnly 报告本工具只有结果窗格（无输入焦点可切换）。
+func (m *Model) OutputOnly() bool { return true }
+
 func (m *Model) Init() tea.Cmd	{ return nil }
 
 func (*Model) AcceptsFiles() bool	{ return false }

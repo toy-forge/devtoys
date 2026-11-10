@@ -108,6 +108,24 @@ func TestAllToolsClustersByCategory(t *testing.T) {
 	}
 }
 
+// 过滤中搜索行不得出现孤立的 …：输入框自带尾部填充，按整行宽渲染再截断
+// 会把填充当成溢出，在提示前留下一个省略号。
+func TestSearchRowHasNoStrayEllipsis(t *testing.T) {
+	for _, size := range []tea.WindowSizeMsg{{Width: 120, Height: 20}, {Width: 100, Height: 20}, {Width: 80, Height: 20}, {Width: 60, Height: 20}, {Width: 44, Height: 20}} {
+		m := press(t, New(), size)
+		m.tools.SetFilterText("json")
+		m.tools.SetFilterState(list.Filtering)
+		row := ansi.Strip(m.searchRow(m.innerWidth()))
+		// 查询词很短，除 34 列以下的极端宽度外不应触发任何截断。
+		if strings.Contains(row, "…") {
+			t.Fatalf("%dx%d: stray ellipsis in search row: %q", size.Width, size.Height, row)
+		}
+		if !strings.Contains(row, "enter apply") {
+			t.Fatalf("%dx%d: filter hint missing: %q", size.Width, size.Height, row)
+		}
+	}
+}
+
 func TestFilterFeedbackAndRecoverableEmptyState(t *testing.T) {
 	m := press(t, New(), tea.WindowSizeMsg{Width: 100, Height: 20})
 	m.tools.SetFilterText("json")

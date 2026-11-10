@@ -13,6 +13,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/skip2/go-qrcode"
 
 	"github.com/toy-forge/devtoys/internal/toolkit"
@@ -296,7 +297,7 @@ func (t *tool) recalc() {
 	if strings.TrimSpace(in) == "" {
 		t.SetError(nil)
 		t.qr, t.img = nil, nil
-		t.SetOutputDisplay("", "Enter text or scan an image to generate a QR code.")
+		t.SetOutputDisplay("", t.emptyMessage())
 		return
 	}
 	t.qr, t.img = nil, nil
@@ -313,9 +314,16 @@ func (t *tool) recalc() {
 	t.render()
 }
 
+// emptyMessage 返回按输出区宽度裁剪的空态提示：窄窗格以 … 结尾，
+// 不留半截单词。文案本身取短句，常见宽度下能完整显示。
+func (t *tool) emptyMessage() string {
+	const message = "Enter text to generate a QR code."
+	return ansi.Truncate(message, max(1, t.Output.Width), "…")
+}
+
 func (t *tool) render() {
 	if t.qr == nil {
-		t.SetOutputDisplay("", "Enter text or scan an image to generate a QR code.")
+		t.SetOutputDisplay("", t.emptyMessage())
 		return
 	}
 	preview := imageview.New(t.img, "QR code")

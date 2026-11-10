@@ -464,7 +464,8 @@ func (m *Model) renderDiff() {
 	var b strings.Builder
 	b.WriteString(labelStyle.Render(m.summary))
 	b.WriteString("\n")
-	if len(m.rows) == 0 {
+	// 空输入时摘要已经给出引导，不再追加 "(empty)" 这种无信息占位。
+	if len(m.rows) == 0 && (m.lastOrig != "" || m.lastMod != "") {
 		b.WriteString(equalStyle.Render("(empty)"))
 		b.WriteString("\n")
 	}
@@ -589,24 +590,11 @@ func (m *Model) footerBarRect() paneRect {
 	return paneRect{x, 0, total, 1}
 }
 
-// footerView 渲染 canonical 底行：ui.StatusBar——左侧
-// canonical 英文句式（ctrl+d 保留切换入口），右端 Copy / < / > 按钮；
-// 错误与已复制以 Toast 呈现（与 workspace footer 同语言）。
+// footerView 渲染 canonical 底行：ui.StatusBar——右侧只保留 Copy / < / >；
+// 错误与已复制以 Toast 呈现，快捷键由外壳状态栏统一展示。
 func (m *Model) footerView() string {
 	m.footer.SetWidth(max(1, m.width))
-	left := "click to edit · scroll to browse · ctrl+d two columns"
-	if m.focus == focusDiff || m.diffExpanded {
-		label := "Expand"
-		if m.diffExpanded {
-			label = "Restore"
-		}
-		left += " · alt+E " + label
-	}
-	// 极窄终端让位给右侧按钮组（水平控件常驻）。
-	if m.width < 30 {
-		left = ""
-	}
-	m.footer.SetLeftTokens([]ui.StatusToken{{Label: left}})
+	m.footer.SetLeftTokens(nil)
 	m.footer.SetHints()
 	switch {
 	case m.err != nil:
@@ -618,6 +606,23 @@ func (m *Model) footerView() string {
 		m.footer.SetRight(m.footerBar.View())
 	}
 	return m.footer.View()
+}
+
+// PaneStatusHints 供外壳状态栏合并展示本工具独有的键。
+func (m *Model) PaneStatusHints() []ui.StatusHint {
+	hints := []ui.StatusHint{
+		{Key: "click", Desc: "edit"},
+		{Key: "scroll", Desc: "output"},
+		{Key: "ctrl+d", Desc: "two columns"},
+	}
+	if m.focus == focusDiff || m.diffExpanded {
+		desc := "expand"
+		if m.diffExpanded {
+			desc = "restore"
+		}
+		hints = append(hints, ui.StatusHint{Key: "alt+e", Desc: desc})
+	}
+	return hints
 }
 
 // diffSegments 用 sergi/go-diff 计算行级差异并拆成片段：

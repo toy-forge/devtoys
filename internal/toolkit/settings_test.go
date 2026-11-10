@@ -15,7 +15,8 @@ func TestSettingsLayoutAndMouse(t *testing.T) {
 	values := []string{"Encode", "UTF-8"}
 	h.Resize(tea.WindowSizeMsg{Width: 60, Height: 20}, &w, values...)
 	view := h.View(values...)
-	if h.Height(values...) != 3 || !strings.Contains(view, "Configuration") || !strings.Contains(view, "Conversion") || !strings.Contains(view, "UTF-8") {
+	// 分组标题的字符形态由 theme.Eyebrow 决定（大写），断言用不区分大小写的形式。
+	if h.Height(values...) != 3 || !strings.Contains(strings.ToUpper(view), "CONFIGURATION") || !strings.Contains(view, "Conversion") || !strings.Contains(view, "UTF-8") {
 		t.Fatalf("settings=%q", view)
 	}
 	if got := h.Index(tea.MouseMsg{X: 40, Y: 2, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress}, values...); got != 1 {

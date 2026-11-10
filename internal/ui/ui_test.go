@@ -411,6 +411,19 @@ func TestToast(t *testing.T) {
 	// 极限宽度截断。
 	toast, _ = NewToast(LevelError, strings.Repeat("e", 40), time.Minute)
 	assertBounded(t, "toast truncate", toast.ViewTruncate(8), 8)
+
+	// 超宽消息必须以 … 收尾：读者要能看出内容被截断，而不是被硬切半句。
+	long, _ := NewToast(LevelError, "Error: "+strings.Repeat("x", 200), time.Minute)
+	cut := long.ViewTruncate(40)
+	assertBounded(t, "toast ellipsis", cut, 40)
+	if !strings.Contains(cut, "…") {
+		t.Fatalf("truncated toast missing ellipsis: %q", cut)
+	}
+	// 未超宽时原样返回，不额外出现 …。
+	short, _ := NewToast(LevelSuccess, "Copied", time.Minute)
+	if got := short.ViewTruncate(80); got != short.View() {
+		t.Fatalf("short toast altered: %q", got)
+	}
 }
 
 func TestTabs(t *testing.T) {

@@ -46,12 +46,6 @@ func (r paneRect) interior(x, y int) bool {
 var (
 	labelStyle	= lipgloss.NewStyle().
 			Foreground(theme.Muted)
-	panelHeadingStyle	= lipgloss.NewStyle().
-				Foreground(theme.BlueBright).
-				Bold(true)
-	sectionStyle	= lipgloss.NewStyle().
-			Foreground(theme.Magenta).
-			Bold(true)
 	cheatSyntaxStyle	= lipgloss.NewStyle().
 				Foreground(theme.YellowBright).
 				Bold(true)
@@ -143,7 +137,18 @@ func (m *model) Category() string	{ return "testers" }
 func (m *model) Icon() string		{ return m.icon }
 func (m *model) Description() string	{ return m.desc }
 
-func (m *model) PaneStatusHints() []ui.StatusHint { return m.ws.StatusHints() }
+// PaneStatusHints 供外壳状态栏合并展示；速查表可展开时追加 alt+e 后缀。
+func (m *model) PaneStatusHints() []ui.StatusHint {
+	hints := m.ws.StatusHints()
+	if m.cheatExpanded || (m.focus == focusCheat && m.desktopLayout()) {
+		desc := "expand"
+		if m.cheatExpanded {
+			desc = "restore"
+		}
+		hints = append(hints, ui.StatusHint{Key: "alt+e", Desc: desc})
+	}
+	return hints
+}
 
 func (m *model) Init() tea.Cmd	{ return nil }
 
@@ -548,19 +553,11 @@ func (m *model) footerRect() paneRect {
 	return paneRect{x: max(0, m.width-1-total), y: 0, width: total, height: 1}
 }
 
-// footerView 渲染 canonical 底行：ui.StatusBar——左 canonical
-// 句式（速查表可展开时附 alt+E 后缀），右端 Copy / < / >；错误与已复制
-// 以 Toast 呈现（与 workspace footer 同语言）。
+// footerView 渲染 canonical 底行：ui.StatusBar——右侧只保留 Copy / < / >；
+// 快捷键由外壳状态栏统一展示，避免同屏两行提示。
 func (m *model) footerView() string {
 	m.footer.SetWidth(max(1, m.width))
-	left := "click to edit · scroll to browse"
-	switch {
-	case m.cheatExpanded:
-		left += " · alt+E Restore"
-	case m.focus == focusCheat && m.desktopLayout():
-		left += " · alt+E Expand"
-	}
-	m.footer.SetLeftTokens([]ui.StatusToken{{Label: left}})
+	m.footer.SetLeftTokens(nil)
 	m.footer.SetHints()
 	switch {
 	case m.ws.Err != nil:

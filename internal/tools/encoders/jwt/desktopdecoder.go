@@ -436,22 +436,16 @@ func (d *decoderDesktop) view(t *tool) string {
 	return inputs + "\n\n" + results + "\n" + d.footerView(t)
 }
 
-// footerView 渲染底行：ui.StatusBar——左句式（解码出结论时以第二个
-// token 附带验签结论），右端按键提示；错误与已复制以 Toast 呈现。
+// footerView 渲染底行：ui.StatusBar——左侧只放解码结论；快捷键由外壳状态栏
+// 统一展示，避免同屏两行提示。
 func (d *decoderDesktop) footerView(t *tool) string {
 	d.footer.SetWidth(max(1, d.width))
-	left := "click to edit · scroll to browse"
-	if d.expanded {
-		left += " · ctrl+E Restore"
-	} else if d.focus == 3 {
-		left += " · ctrl+E Expand"
-	}
-	tokens := []ui.StatusToken{{Label: left}}
+	var tokens []ui.StatusToken
 	if d.decoded && d.status != "" && t.Err == nil {
 		tokens = append(tokens, ui.StatusToken{Label: d.status})
 	}
 	d.footer.SetLeftTokens(tokens)
-	d.footer.SetHints(ui.StatusHint{Key: "alt+C", Desc: "claims"}, ui.StatusHint{Key: "ctrl+S", Desc: "key"})
+	d.footer.SetHints()
 	switch {
 	case t.Err != nil:
 		d.footer.SetToast(ui.Toast{Level: ui.LevelError, Message: "Error: " + t.Err.Error()})

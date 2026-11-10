@@ -113,6 +113,8 @@ func New() *model {
 	m.cheat = viewport.New(1, 1)
 	m.cheat.SetContent(jsonPathCheatSheet(80))
 	m.resize()
+	// 首次渲染即给出空态引导，而不是留一块空白结果面板。
+	m.recompute()
 	return m
 }
 
@@ -123,7 +125,15 @@ func (m *model) Category() string	{ return "testers" }
 func (m *model) Icon() string		{ return m.icon }
 func (m *model) Description() string	{ return m.desc }
 
-func (m *model) PaneStatusHints() []ui.StatusHint { return m.ws.StatusHints() }
+// PaneStatusHints 供外壳状态栏合并展示；展开态追加 alt+e 后缀。
+func (m *model) PaneStatusHints() []ui.StatusHint {
+	hints := m.ws.StatusHints()
+	desc := "expand"
+	if m.expanded {
+		desc = "restore"
+	}
+	return append(hints, ui.StatusHint{Key: "alt+e", Desc: desc})
+}
 func (*model) AcceptsFiles() bool	{ return true }
 
 func (m *model) Init() tea.Cmd	{ return nil }
@@ -392,12 +402,11 @@ func (m *model) wideView() string {
 	return body + "\n" + m.footerView("Expand")
 }
 
-// footerView 渲染 canonical 底行：ui.StatusBar——左 canonical
-// 句式 + expand 后缀，右端 Copy / < / >（Copy=测试结果、< > 横向滚动）；
-// 错误以 Toast 呈现（与 workspace footer 同语言）。
+// footerView 渲染 canonical 底行：ui.StatusBar——右侧只保留 Copy / < / >；
+// 错误以 Toast 呈现，快捷键与 expand 后缀由外壳状态栏展示。
 func (m *model) footerView(expandLabel string) string {
 	m.footer.SetWidth(max(1, m.width))
-	m.footer.SetLeftTokens([]ui.StatusToken{{Label: "click to edit · scroll to browse · alt+E " + expandLabel}})
+	m.footer.SetLeftTokens(nil)
 	m.footer.SetHints()
 	switch {
 	case m.ws.Err != nil:
@@ -632,7 +641,7 @@ func (m *model) recompute() {
 
 	m.ws.SetError(nil)
 	if src == "" {
-		m.setOutput("No results found.")
+		m.setOutput("Results appear here.")
 		return
 	}
 
@@ -642,7 +651,7 @@ func (m *model) recompute() {
 		return
 	}
 	if strings.TrimSpace(doc) == "" {
-		m.setOutput("No results found.")
+		m.setOutput("Enter a JSON document to query.")
 		return
 	}
 

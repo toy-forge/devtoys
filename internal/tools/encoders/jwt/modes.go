@@ -512,14 +512,13 @@ func (t *jwtTool) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return t, cmd
 }
 func (t *jwtTool) View() string {
-	configurationStyle := lipgloss.NewStyle().Foreground(theme.Text).Bold(true)
 	labelStyle := lipgloss.NewStyle().Foreground(theme.Muted)
 	modeLabel := "󰒓 Tool Mode"
 	// 模式是可点击的两态控件：用 ui.Switch 药丸渲染（Encode 为 on）。
 	modeControl := ui.Switch{On: t.encoding, OnLabel: "Encode", OffLabel: "Decode"}.View()
 	modeValue := modeControl
 	modeRow := ui.FormRowRight(modeLabel, lipgloss.Width(modeLabel), modeValue, t.width)
-	configuration := configurationStyle.Render("Configuration") + "\n" + modeRow + "\n" +
+	configuration := theme.Eyebrow("Configuration") + "\n" + modeRow + "\n" +
 		labelStyle.Render(ansi.Truncate("Select which mode you want to use", max(1, t.width), "…"))
 	if t.modeCompact {
 		configuration = labelStyle.Render("󰒓 Mode") + "  " + modeValue +

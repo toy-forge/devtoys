@@ -60,7 +60,7 @@ func TestChineseInput(t *testing.T) {
 	}
 }
 
-// TestEmptyInput 空输入应清空输出且不报错。
+// TestEmptyInput 空输入不应报错：输出无内容，输出区展示引导提示。
 func TestEmptyInput(t *testing.T) {
 	got, err := recalcOf(t, "   \n", levelMedium)
 	if err != nil {
@@ -68,6 +68,29 @@ func TestEmptyInput(t *testing.T) {
 	}
 	if got != "" {
 		t.Fatalf("空输入应输出空串，得到 %q", got)
+	}
+	// OutputText 是可复制的正文（此处为空）；引导提示只出现在展示层，
+	// 未初始化布局时按默认窄宽度裁剪为 …，但必须仍以文字开头而不是空白。
+	tl := newTool()
+	tl.Input.SetValue("   \n")
+	tl.recalc()
+	if shown := strings.TrimSpace(tl.Output.View()); !strings.HasPrefix(shown, "Enter text") {
+		t.Fatalf("空闲态应给出引导提示，得到 %q", tl.Output.View())
+	}
+}
+
+// TestEmptyMessageTruncatesWithEllipsis 窄输出区下空态提示以 … 结尾，
+// 不在单词中间硬截断。
+func TestEmptyMessageTruncatesWithEllipsis(t *testing.T) {
+	tl := newTool()
+	tl.Update(tea.WindowSizeMsg{Width: 90, Height: 26})
+	tl.Output.Width = 20
+	msg := tl.emptyMessage()
+	if !strings.HasSuffix(msg, "…") {
+		t.Fatalf("窄输出区提示应以 … 结尾，得到 %q", msg)
+	}
+	if strings.Contains(msg, "QR c") && !strings.Contains(msg, "QR code") {
+		t.Fatalf("提示不得在单词中间截断: %q", msg)
 	}
 }
 

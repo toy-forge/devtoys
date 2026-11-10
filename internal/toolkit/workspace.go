@@ -1073,7 +1073,8 @@ func (w *Workspace) renderOutputPane() string {
 	// 空白面板。直接写 viewport 的加载态（Formatting…）不算空，原样显示。
 	content := w.Output.View()
 	if w.Err == nil && strings.TrimSpace(ansi.Strip(content)) == "" {
-		content = theme.MutedStyle().Render("Output appears here.")
+		text := ansi.Truncate("Output appears here.", max(1, w.outputPane.ContentWidth()), "…")
+		content = theme.MutedStyle().Render(text)
 	}
 	// 焦点表达式与 layoutPanes 的 SetFocused 同源：同一时刻至多一个
 	// 容器持有焦点环。
@@ -1189,6 +1190,9 @@ func (w Workspace) StatusHints() []ui.StatusHint {
 	}
 	return hints
 }
+
+// OutputOnly 报告工作区是否只有输出窗格（无输入可聚焦）。
+func (w Workspace) OutputOnly() bool { return w.outputOnly }
 
 // footerView 渲染底部单行状态条：右侧 Copy / 翻页；快捷键由 app.statusHints 展示。
 func (w *Workspace) footerView() string {

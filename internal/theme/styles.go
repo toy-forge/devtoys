@@ -5,6 +5,7 @@
 package theme
 
 import (
+	"strings"
 	"sync"
 
 	"github.com/charmbracelet/lipgloss"
@@ -54,6 +55,9 @@ const (
 	KeyStatusAccent
 	// KeyDisabled 是禁用控件/文本样式（Muted + Faint）。
 	KeyDisabled
+	// KeyEyebrow 是分组标题样式（大写弱化粗体），用于类别带、表头、分区标题：
+	// 与正文标题区分开的第三级文本角色，避免正文标题与分组标题同款。
+	KeyEyebrow
 )
 
 var (
@@ -115,6 +119,10 @@ func Style(key StyleKey) lipgloss.Style {
 			return lipgloss.NewStyle().Foreground(CursorText).Background(Accent).Bold(true)
 		case KeyDisabled:
 			return lipgloss.NewStyle().Foreground(Muted).Faint(true)
+		case KeyEyebrow:
+			// 分组眉标：Muted 粗体。大写由调用方（Eyebrow）统一施加，
+			// 保证类别带、表头、分区标题拿到同一份字符形态。
+			return lipgloss.NewStyle().Foreground(Muted).Bold(true)
 		default:
 			return lipgloss.NewStyle()
 		}
@@ -132,6 +140,15 @@ func ValueStyle() lipgloss.Style	{ return Style(KeyValue) }
 
 // DisabledStyle 禁用控件/文本（Muted + Faint）。
 func DisabledStyle() lipgloss.Style	{ return Style(KeyDisabled) }
+
+// EyebrowStyle 分组题样式（Muted 粗体）；配合 Eyebrow 使用。
+func EyebrowStyle() lipgloss.Style	{ return Style(KeyEyebrow) }
+
+// Eyebrow 渲染分组眉标：大写 + Muted 粗体。类别带、表头、分区标题
+// 都走这一处，字符形态不会各处走样。
+func Eyebrow(text string) string {
+	return EyebrowStyle().Render(strings.ToUpper(text))
+}
 
 // LabelStyle 普通标签文本。
 func LabelStyle() lipgloss.Style	{ return Style(KeyLabel) }

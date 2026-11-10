@@ -86,7 +86,15 @@ func (m *Model) Category() string	{ return "generators" }
 func (m *Model) Icon() string		{ return "󰌆" }
 func (m *Model) Description() string	{ return "Generate and verify text or file hashes" }
 
-func (m *Model) PaneStatusHints() []ui.StatusHint { return m.ws.StatusHints() }
+// PaneStatusHints 供外壳状态栏合并展示本工具独有的键。
+func (m *Model) PaneStatusHints() []ui.StatusHint {
+	hints := m.ws.StatusHints()
+	hints = append(hints, ui.StatusHint{Key: "ctrl+k", Desc: "key"}, ui.StatusHint{Key: "alt+v", Desc: "compare"})
+	if m.running {
+		hints = append(hints, ui.StatusHint{Key: "alt+x", Desc: "cancel"})
+	}
+	return hints
+}
 func (m *Model) Init() tea.Cmd		{ return nil }
 func (m *Model) AcceptsFilePaths() bool	{ return true }
 

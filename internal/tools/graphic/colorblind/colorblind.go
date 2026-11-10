@@ -400,6 +400,19 @@ func (t *tool) foregroundPreview(payload string) tea.Cmd {
 	}
 }
 
+// PaneStatusHints 供外壳状态栏合并展示本工具独有的键。
+func (t *tool) PaneStatusHints() []ui.StatusHint {
+	if t.img == nil {
+		return []ui.StatusHint{{Key: "ctrl+f", Desc: "open image"}}
+	}
+	hints := []ui.StatusHint{{Key: "1-4", Desc: "view"}, {Key: "enter", Desc: "grid"}}
+	if t.selected != -1 {
+		hints = append(hints, ui.StatusHint{Key: "alt+i", Desc: "preview"})
+	}
+	hints = append(hints, ui.StatusHint{Key: "ctrl+s", Desc: "save png"})
+	return hints
+}
+
 func (t *tool) View() string {
 	if t.editing {
 		return t.pathView()
@@ -412,12 +425,9 @@ func (t *tool) View() string {
 	} else if t.status != "" {
 		footer = t.status
 	} else if t.img != nil {
-		footer = t.name + " · Enter native grid · Alt+I selected preview · 1–4 select · Ctrl+S save PNG"
-	} else {
-		// 空态页脚提示（ctrl+f 由 shell 处理），
-		// 前导空格与 StatusBar 页脚语言一致。
-		footer = " ctrl+f open file · tab focus"
+		footer = t.name + " · Enter native grid · Ctrl+S save PNG"
 	}
+	// 空态与选择提示由空态面板与外壳状态栏承担，这里不再重复一行快捷键。
 	footer = lipgloss.NewStyle().Foreground(theme.Muted).Render(ansi.Truncate(footer, width, ""))
 	var body string
 	if t.img == nil {
@@ -457,7 +467,7 @@ func (t *tool) emptyState(width, height int) string {
 	innerW, innerH := max(1, width-4), max(1, height-2)
 	hint := "󰈈  No image yet"
 	use := "Use ＋ Open to select an image to compare."
-	lines := []string{hint, "", use, "", "ctrl+f open file  ·  enter opens the comparison grid"}
+	lines := []string{hint, "", use, "", "Use 1-4 to switch view, enter for the grid"}
 	content := lipgloss.NewStyle().Foreground(theme.Muted).Render(ansi.Truncate(hint, innerW, ""))
 	rest := make([]string, 0, innerH-1)
 	for _, line := range lines[1:] {
@@ -470,8 +480,8 @@ func (t *tool) emptyState(width, height int) string {
 		Render(content)
 	out := strings.Split(pane, "\n")
 	w := lipgloss.Width(out[0])
-	label := " IMAGE "
-	out[0] = ansi.Cut(out[0], 0, 2) + theme.MutedStyle().Bold(true).Render(label) + ansi.Cut(out[0], 2+lipgloss.Width(label), w)
+	label := " " + theme.Eyebrow("Image") + " "
+	out[0] = ansi.Cut(out[0], 0, 2) + label + ansi.Cut(out[0], 2+lipgloss.Width(label), w)
 	if start := w - 1 - lipgloss.Width(toolkit.CompactActions(t.actions()...)); start >= 2+lipgloss.Width(label) {
 		buttons := toolkit.CompactActions(t.actions()...)
 		out[0] = ansi.Cut(out[0], 0, start) + buttons + ansi.Cut(out[0], start+lipgloss.Width(buttons), w)

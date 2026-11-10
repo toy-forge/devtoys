@@ -515,27 +515,32 @@ func (c *converter) View() string {
 			body[i] = ansi.Truncate(rows[n].text, c.width, "")
 		}
 	}
-	// 页脚：ui.StatusBar——左句式 + 右按键提示（超宽右侧
-	// 截断加 …）；已复制以 Toast 呈现。
+	// 页脚：ui.StatusBar——右侧只保留 Toast 位；快捷键由外壳状态栏统一
+	// 展示，避免同屏两行提示。
 	bar := ui.NewStatusBar()
 	bar.SetWidth(max(1, c.width))
-	bar.SetLeftTokens([]ui.StatusToken{{Label: "click to edit · scroll to browse"}})
-	if c.advanced {
-		bar.SetHints(
-			ui.StatusHint{Key: "alt+[ / alt+]", Desc: "input base"},
-			ui.StatusHint{Key: "alt+, / alt+.", Desc: "output base"},
-			ui.StatusHint{Key: "ctrl+y", Desc: "input"},
-			ui.StatusHint{Key: "ctrl+shift+y", Desc: "output"},
-		)
-	} else {
-		bar.SetHints(
-			ui.StatusHint{Key: "alt+A", Desc: "mode"},
-			ui.StatusHint{Key: "alt+F", Desc: "format"},
-			ui.StatusHint{Key: "ctrl+y", Desc: "copy"},
-		)
-	}
+	bar.SetLeftTokens(nil)
 	if c.copied {
 		bar.SetToast(ui.Toast{Level: ui.LevelSuccess, Message: "Copied"})
 	}
 	return prefix + strings.Join(body, "\n") + "\n" + bar.View()
+}
+
+// PaneStatusHints 供外壳状态栏合并展示本工具独有的键。
+func (c *converter) PaneStatusHints() []ui.StatusHint {
+	hints := []ui.StatusHint{
+		{Key: "click", Desc: "edit"},
+		{Key: "scroll", Desc: "browse"},
+	}
+	if c.advanced {
+		return append(hints,
+			ui.StatusHint{Key: "alt+[", Desc: "input base"},
+			ui.StatusHint{Key: "alt+,", Desc: "output base"},
+			ui.StatusHint{Key: "ctrl+shift+y", Desc: "copy output"},
+		)
+	}
+	return append(hints,
+		ui.StatusHint{Key: "alt+a", Desc: "mode"},
+		ui.StatusHint{Key: "alt+f", Desc: "format"},
+	)
 }

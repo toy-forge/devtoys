@@ -19,6 +19,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/x/ansi"
 )
 
 type testTool struct {
@@ -125,6 +126,69 @@ func TestFileReadShowsLoadingAndClearsOnResult(t *testing.T) {
 	m = next.(Model)
 	if m.loading || m.picker != nil || tool.pasted != "hello" {
 		t.Fatalf("loading did not resolve: loading=%v picker=%v pasted=%q", m.loading, m.picker != nil, tool.pasted)
+	}
+}
+
+func TestToolStatusHintsHaveNoDuplicates(t *testing.T) {
+	seenTools := 0
+	for _, tool := range toolkit.All() {
+		m := New()
+		m.mode, m.active = modeTool, tool
+		next, _ := m.Update(tea.WindowSizeMsg{Width: 110, Height: 28})
+		m = next.(Model)
+		seen := map[string]bool{}
+		for _, hint := range m.statusHints() {
+			if seen[hint.Key] {
+				t.Fatalf("%s: duplicate hint key %q", tool.ID(), hint.Key)
+			}
+			seen[hint.Key] = true
+		}
+		seenTools++
+	}
+	if seenTools != toolkit.Count() {
+		t.Fatalf("checked %d tools, want %d", seenTools, toolkit.Count())
+	}
+}
+
+func TestOutputOnlyToolsDoNotAdvertiseFocusToggle(t *testing.T) {
+	for _, id := range []string{"generators.lorem", "generators.uuid"} {
+		tool, ok := toolkit.Get(id)
+		if !ok {
+			t.Fatalf("%s missing", id)
+		}
+		if !toolkit.OutputOnly(tool) {
+			t.Fatalf("%s should report OutputOnly", id)
+		}
+		m := New()
+		m.mode, m.active = modeTool, tool
+		next, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 24})
+		m = next.(Model)
+		for _, hint := range m.statusHints() {
+			if hint.Key == "tab" {
+				t.Fatalf("%s advertises a focus toggle it does not have", id)
+			}
+		}
+	}
+}
+
+func TestBespokeToolDrawsOnlyOneHintRow(t *testing.T) {
+	// 工具自带页脚只保留按钮/结论；快捷键统一由外壳状态栏展示。
+	for _, id := range []string{"text.comparer", "testers.regex", "converters.dateparser", "converters.numberbase"} {
+		tool, ok := toolkit.Get(id)
+		if !ok {
+			t.Fatalf("%s missing", id)
+		}
+		m := New()
+		m.mode, m.active = modeTool, tool
+		next, _ := m.Update(tea.WindowSizeMsg{Width: 110, Height: 28})
+		m = next.(Model)
+		view := ansi.Strip(m.View())
+		if strings.Count(view, "click to edit") != 0 {
+			t.Fatalf("%s still draws a duplicate hint sentence", id)
+		}
+		if strings.Count(view, "tab focus") > 1 {
+			t.Fatalf("%s draws the focus hint more than once", id)
+		}
 	}
 }
 

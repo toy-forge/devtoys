@@ -111,6 +111,27 @@ func (t *tool) Description() string {
 
 func (t *tool) Init() tea.Cmd	{ return nil }
 
+// PaneStatusHints 供外壳状态栏合并展示本工具独有的键。
+func (t *tool) PaneStatusHints() []ui.StatusHint {
+	if t.desktop != nil && t.desktop.active {
+		hints := []ui.StatusHint{
+			{Key: "click", Desc: "edit"},
+			{Key: "scroll", Desc: "browse"},
+			{Key: "alt+c", Desc: "claims"},
+			{Key: "ctrl+s", Desc: "key"},
+		}
+		desc := "expand"
+		if t.desktop.expanded {
+			desc = "restore"
+		}
+		if t.desktop.expanded || t.desktop.focus == 3 {
+			hints = append(hints, ui.StatusHint{Key: "ctrl+e", Desc: desc})
+		}
+		return hints
+	}
+	return t.Workspace.StatusHints()
+}
+
 func (t *tool) keyTitle() string {
 	token := strings.Join(strings.Fields(t.Input.Value()), "")
 	parts := strings.Split(token, ".")

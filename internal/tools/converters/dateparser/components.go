@@ -124,8 +124,9 @@ const (
 	formStackedLabel	= 14
 )
 
-// gridColumnWidth 返回字段在网格中的列宽：表头与输入框（取值宽 + 两列内边距）取较大者，
-// 保证表头对齐且任何取值都不会撑开列。
+// gridColumnWidth 返回字段在网格中的列宽：表头与输入框（取值宽 + 两列内边距）取较大者。
+// 表头缩进不计入列宽，否则七列各加 1 宽会把网格挤出常见终端宽度、
+// 让桌面网格退化成逐行表单；缩进在 gridHeader 里按列宽内右移处理。
 func gridColumnWidth(f field) int {
 	return max(lipgloss.Width(fieldNames[f]), componentWidth(f)+2*ui.Space1)
 }

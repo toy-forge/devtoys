@@ -198,10 +198,12 @@ func (h SettingHeader) baseView(values ...string) string {
 		if len(h.Groups) > 0 && h.Groups[0].Title != "" {
 			title += " · " + h.Groups[0].Title
 		}
-		heading := lipgloss.NewStyle().Foreground(theme.Text).Bold(true).Render(ansi.Truncate(title, h.width, "…"))
-		return heading + "\n" + h.fallback.View(values...)
+		heading := theme.Eyebrow(title)
+		return ansi.Truncate(heading, h.width, "…") + "\n" + h.fallback.View(values...)
 	}
-	heading := theme.TitleStyle().Render("Configuration")
+	// 设置区标题是分区眉标，不是页面标题：比页面标题低一级，
+	// 避免与工具名同款抢同一层级。
+	heading := theme.Eyebrow("Configuration")
 	label := theme.LabelStyle()
 	lines := make([]string, 0, len(h.settingRows(values))+1)
 	if !h.HideTitle {

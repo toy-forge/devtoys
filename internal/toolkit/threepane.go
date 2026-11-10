@@ -547,6 +547,11 @@ func (p *ThreePane) pane(index int) string {
 		content = p.B.View()
 	default:
 		content = p.Output.View()
+		// 空态教用途：与其他工作区的输出区保持同一句话，不留空白面板。
+		if p.Err == nil && strings.TrimSpace(ansi.Strip(content)) == "" {
+			text := ansi.Truncate("Results appear here.", max(1, pane.ContentWidth()), "…")
+			content = theme.MutedStyle().Render(text)
+		}
 	}
 	view, _ := pane.Render(content)
 	return view

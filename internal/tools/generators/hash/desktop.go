@@ -73,23 +73,20 @@ func hashFooter(line string, width int) string {
 	return hashSurfaceRow(theme.LabelStyle().Render(line), width)
 }
 
-// hashFooterLeft 返回页脚左段提示。
+// hashFooterLeft 返回页脚左段提示（只保留本行按钮组；快捷键在外壳状态栏）。
 func hashFooterLeft(running bool) string {
-	left := toolkit.CompactActions("<", ">") + "  scroll output · Ctrl+K key · Alt+V compare"
+	left := toolkit.CompactActions("<", ">")
 	if running {
-		left += " · Alt+X cancel"
+		left += "  cancelling…"
 	}
 	return left
 }
 
-// hashFooterRow 渲染页脚行：左 = [</>] 按钮 + 提示，
+// hashFooterRow 渲染页脚行：左 = [</>] 按钮，
 // 右 = Compare 校验和输入；过窄时左段提示逐级缩短，输入区保留可打字。
 func (m *Model) hashFooterRow() string {
 	left := hashFooterLeft(m.running)
 	right := m.compareSegment()
-	if lipgloss.Width(left)+lipgloss.Width(right)+1 > m.width {
-		left = toolkit.CompactActions("<", ">") + "  scroll output"
-	}
 	if lipgloss.Width(left)+lipgloss.Width(right)+1 > m.width {
 		left = toolkit.CompactActions("<", ">")
 	}

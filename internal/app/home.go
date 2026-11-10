@@ -349,7 +349,7 @@ func (d toolDelegate) Render(w io.Writer, m list.Model, index int, item list.Ite
 // 图标 + 大写类别名，弱化加粗。它不是可选中行，也不参与 hover。
 func sectionRow(entry listItem, width int) string {
 	icon := theme.MutedStyle().Render(ui.IconCell(theme.GroupIcon(entry.category), 2))
-	label := theme.MutedStyle().Bold(true).Render(strings.ToUpper(entry.title))
+	label := theme.Eyebrow(entry.title)
 	line := " " + icon + strings.Repeat(" ", ui.Space1) + label
 	if pad := width - ui.Width(line); pad > 0 {
 		line += strings.Repeat(" ", pad)

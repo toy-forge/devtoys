@@ -627,6 +627,8 @@ func (m Model) statusActions() []statusAction {
 }
 
 // statusHints 是状态栏右侧按键提示：每个焦点区域只列它真正响应的键。
+// 工具页的提示按「返回 → 打开文件 → 工具独有键 → 焦点/复制」合并，
+// 并在同键重复时只保留第一条，避免两行或重复提示。
 func (m Model) statusHints() []ui.StatusHint {
 	if m.mode == modeTool && m.active != nil {
 		hints := []ui.StatusHint{{Key: "esc", Desc: "back"}}
@@ -634,12 +636,30 @@ func (m Model) statusHints() []ui.StatusHint {
 			hints = append(hints, ui.StatusHint{Key: "ctrl+f", Desc: "open file"})
 		}
 		hints = append(hints, paneHintsFromActive(m.active)...)
-		return append(hints, ui.StatusHint{Key: "tab", Desc: "focus"}, ui.StatusHint{Key: "ctrl+y", Desc: "copy"})
+		if !toolkit.OutputOnly(m.active) {
+			hints = append(hints, ui.StatusHint{Key: "tab", Desc: "focus"})
+		}
+		hints = append(hints, ui.StatusHint{Key: "ctrl+y", Desc: "copy"})
+		return dedupeHints(hints)
 	}
 	if m.navFocus {
 		return []ui.StatusHint{{Key: "↑↓", Desc: "category"}, {Key: "tab", Desc: "tools"}, {Key: "ctrl+c", Desc: "quit"}}
 	}
 	return []ui.StatusHint{{Key: "/", Desc: "search"}, {Key: "enter", Desc: "open"}, {Key: "tab", Desc: "categories"}, {Key: "ctrl+c", Desc: "quit"}}
+}
+
+// dedupeHints 按 Key 去重，保留第一次出现（外壳的统一键优先）。
+func dedupeHints(hints []ui.StatusHint) []ui.StatusHint {
+	seen := make(map[string]bool, len(hints))
+	out := hints[:0]
+	for _, hint := range hints {
+		if seen[hint.Key] {
+			continue
+		}
+		seen[hint.Key] = true
+		out = append(out, hint)
+	}
+	return out
 }
 
 // statusView 渲染最后一行：ui.StatusBar，notice 以 ui.Toast 呈现。

@@ -89,11 +89,11 @@ func TestToolOptionButtonsRespondToMouse(t *testing.T) {
 				tool = updated
 			}
 			lines := strings.Split(ansi.Strip(tool.View()), "\n")
-			// 桌面式设置头可能不在首行渲染 "Configuration" 标题，
+			// 桌面式设置头可能不在首行渲染标题（字符形态为大写），
 			// 定位标题行并点击其下第一行选项。
 			row := 0
 			for i, line := range lines {
-				if strings.HasPrefix(line, "Configuration") {
+				if strings.HasPrefix(strings.ToUpper(line), "CONFIGURATION") {
 					row = i + 1
 					break
 				}

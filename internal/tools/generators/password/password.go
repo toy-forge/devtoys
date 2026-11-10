@@ -106,6 +106,9 @@ func (m *Model) Description() string	{ return "Generate a random password" }
 
 func (m *Model) PaneStatusHints() []ui.StatusHint { return m.ws.StatusHints() }
 
+// OutputOnly 报告当前尺寸下是否只有结果窗格（矮屏时隐藏输入）。
+func (m *Model) OutputOnly() bool { return m.ws.OutputOnly() }
+
 func (m *Model) Init() tea.Cmd	{ return nil }
 
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {

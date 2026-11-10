@@ -8,6 +8,7 @@ import (
 
 	"github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/toy-forge/devtoys/internal/theme"
 )
 
@@ -88,8 +89,18 @@ func (t Toast) View() string {
 }
 
 // ViewTruncate 渲染并截断到 width（含省略号），供状态栏嵌入。
+// MaxWidth 只做硬裁剪、不补 …，读者看不出被截断；这里显式在末尾补上，
+// 并保证整段仍落在 width 内。
 func (t Toast) ViewTruncate(width int) string {
-	return lipgloss.NewStyle().MaxWidth(max(0, width)).Render(t.View())
+	width = max(0, width)
+	if width == 0 {
+		return ""
+	}
+	if Width(t.View()) <= width {
+		return t.View()
+	}
+	message := ansi.Truncate(t.Message, max(1, width-4), "…")
+	return Toast{Level: t.Level, Message: message}.View()
 }
 
 // Width 返回渲染后的显示宽度（含 pill 左右内边距）。

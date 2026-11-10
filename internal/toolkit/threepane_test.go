@@ -9,6 +9,20 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
+// 三个窗格的输出/结果区在空内容时必须有空态提示，不能是一块空白面板
+//（与 Workspace 的输出区保持同一语言）。
+func TestThreePaneEmptyOutputShowsPlaceholder(t *testing.T) {
+	p := NewThreePane("A", "B")
+	p.SetSize(80, 20)
+	if view := ansi.Strip(p.View()); !strings.Contains(view, "Results appear here.") {
+		t.Fatalf("empty result pane has no placeholder:\n%s", view)
+	}
+	p.SetOutput("value")
+	if view := ansi.Strip(p.View()); strings.Contains(view, "Results appear here.") {
+		t.Fatalf("placeholder remained after output was set:\n%s", view)
+	}
+}
+
 func TestThreePaneOutputFirstLayoutAndFocus(t *testing.T) {
 	p := NewThreePane("Header", "Payload")
 	p.Titles[2] = "Token"

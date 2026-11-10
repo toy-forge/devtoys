@@ -206,12 +206,25 @@ func spread(width int, left, right string) string {
 
 // searchRow 渲染搜索行：一个 Surface 底的输入框。
 // 过滤中显示 bubbles 的输入框；已过滤显示查询词与清除提示。
+//
+// 过滤时输入框按剩余宽度渲染（而不是整行宽）：输入框自带尾部填充，
+// 若按整行宽渲染再由 spread 截断，截掉的只是填充空白，
+// 却会在提示前留下一个孤零零的 …。
 func (m Model) searchRow(iw int) string {
 	var line string
 	switch m.tools.FilterState() {
 	case list.Filtering:
-		line = m.tools.FilterInput.View()
-		line = spread(iw, line, theme.MutedStyle().Render("enter apply · esc clear"))
+		hint := theme.MutedStyle().Render("enter apply · esc clear")
+		// textinput 的 Width 不含 Prompt 列；预算要再扣掉提示符宽度。
+		budget := max(1, iw-ui.Width(hint)-2)
+		m.tools.FilterInput.Width = max(1, budget-ui.Width(m.tools.FilterInput.Prompt))
+		// textinput.View 只返回内容宽度，不铺到 Width；补到预算宽度后再交给
+		// spread，否则左段偏短、spread 会把它当成溢出并塞进一个 …。
+		input := m.tools.FilterInput.View()
+		if pad := budget - ui.Width(input); pad > 0 {
+			input += strings.Repeat(" ", pad)
+		}
+		line = spread(iw, input, hint)
 	case list.FilterApplied:
 		icon := ui.IconCell(theme.Icon(theme.IconSearch), 2)
 		query := theme.LabelStyle().Render(" " + icon + strings.Repeat(" ", ui.Space1) + m.tools.FilterInput.Value())
@@ -225,9 +238,10 @@ func (m Model) searchRow(iw int) string {
 }
 
 // columnHeader 渲染列标题，列宽与 toolDelegate 共用 newToolColumns。
+// 列标题走眉标角色（大写、Muted 粗体），与类别带同一份字符形态。
 func (m Model) columnHeader(iw int) string {
 	cols := newToolColumns(iw)
-	style := theme.MutedStyle().Bold(true)
+	style := theme.EyebrowStyle()
 	line := style.Render(strings.Repeat(" ", toolRowPrefix)) + cell("TOOL", cols.title, style)
 	if cols.showDesc {
 		gap := style.Render(strings.Repeat(" ", columnGap))
